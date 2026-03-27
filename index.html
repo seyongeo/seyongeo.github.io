@@ -220,6 +220,70 @@
         .divider { height: 1px; background: var(--border); margin: 32px 0; }
 
         /* ════════════════════════════════════
+           DASHBOARD TABLE
+        ════════════════════════════════════ */
+        .dash-table-wrap {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            overflow: hidden;
+            margin-top: 8px;
+        }
+        .dash-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        .dash-table thead tr {
+            background: var(--surface-elevated);
+            border-bottom: 1px solid var(--border);
+        }
+        .dash-table th {
+            padding: 9px 16px;
+            font-size: 11px;
+            font-weight: 600;
+            font-family: 'JetBrains Mono', monospace;
+            color: var(--text-tertiary);
+            letter-spacing: 0.6px;
+            text-transform: uppercase;
+            text-align: left;
+            user-select: none;
+            white-space: nowrap;
+        }
+        .dash-table th.sortable { cursor: pointer; }
+        .dash-table th.sortable:hover { color: var(--text-secondary); }
+        .dash-table th.sort-active { color: var(--accent-light); }
+        .th-right { text-align: right; }
+        .sort-icon { margin-left: 4px; font-size: 10px; opacity: 0.4; }
+        .sort-icon.asc  { opacity: 1; }
+        .sort-icon.desc { opacity: 1; }
+        .dash-table tbody tr {
+            border-bottom: 1px solid var(--border);
+            transition: background 0.1s;
+        }
+        .dash-table tbody tr:last-child { border-bottom: none; }
+        .dash-table tbody tr:hover { background: var(--surface-hover); }
+        .dash-table td {
+            padding: 0 16px;
+            height: 38px;
+            font-size: 13px;
+            color: var(--text-primary);
+            vertical-align: middle;
+        }
+        .dash-link {
+            color: var(--text-primary);
+            text-decoration: none;
+            font-weight: 500;
+        }
+        .dash-link:hover { color: var(--accent-light); text-decoration: underline; }
+        .dash-filename {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 11px;
+            color: var(--text-tertiary);
+        }
+        .dash-mono { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--text-tertiary); }
+        .dash-right { text-align: right; }
+
+        /* ════════════════════════════════════
            EXPLORER VIEW
         ════════════════════════════════════ */
         .toolbar {
@@ -336,78 +400,88 @@
     ══════════════════════════════════════ -->
     <div class="view active" id="view-dashboard">
 
-        <div class="section-label" style="margin-top:8px">관리 도구</div>
-        <div class="grid">
-            <a class="card" href="project-management.html">
-                <div class="card-top">
-                    <div class="card-icon icon-blue">🗂️</div>
-                    <span class="card-arrow">→</span>
-                </div>
-                <div class="card-title">프로젝트 관리</div>
-                <span class="card-badge badge-blue">management</span>
-            </a>
-            <a class="card" href="project-management-view.html">
-                <div class="card-top">
-                    <div class="card-icon icon-cyan">👁️</div>
-                    <span class="card-arrow">→</span>
-                </div>
-                <div class="card-title">프로젝트 관리 뷰</div>
-                <span class="card-badge badge-cyan">view</span>
-            </a>
-            <a class="card" href="project-management-w2.html">
-                <div class="card-top">
-                    <div class="card-icon icon-teal">📋</div>
-                    <span class="card-arrow">→</span>
-                </div>
-                <div class="card-title">프로젝트 관리 W2</div>
-                <span class="card-badge badge-teal">w2</span>
-            </a>
-            <a class="card" href="project-detail-fields.html">
-                <div class="card-top">
-                    <div class="card-icon icon-purple">🔧</div>
-                    <span class="card-arrow">→</span>
-                </div>
-                <div class="card-title">Data Entity 등록</div>
-                <span class="card-badge badge-purple">fields</span>
-            </a>
-            <a class="card" href="project-detail-input.html">
-                <div class="card-top">
-                    <div class="card-icon icon-green">✏️</div>
-                    <span class="card-arrow">→</span>
-                </div>
-                <div class="card-title">프로젝트 진행 상황 입력</div>
-                <span class="card-badge badge-green">input</span>
-            </a>
+        <div class="dash-table-wrap">
+            <table class="dash-table" id="dashTable">
+                <thead>
+                    <tr>
+                        <th class="sortable" data-col="title" data-dir="asc">
+                            제목 <span class="sort-icon" data-col="title">↕</span>
+                        </th>
+                        <th class="sortable" data-col="file" data-dir="asc">
+                            파일명 <span class="sort-icon" data-col="file">↕</span>
+                        </th>
+                        <th class="sortable th-right" data-col="date" data-dir="asc">
+                            수정일 <span class="sort-icon" data-col="date">↕</span>
+                        </th>
+                        <th class="sortable th-right" data-col="size" data-dir="asc">
+                            크기 <span class="sort-icon" data-col="size">↕</span>
+                        </th>
+                    </tr>
+                </thead>
+                <tbody id="dashBody">
+                    <tr data-file="project-detail-fields.html" data-title="Data Entity 등록" data-date="2026-03-17" data-size="29">
+                        <td><a class="dash-link" href="project-detail-fields.html">Data Entity 등록</a></td>
+                        <td class="dash-filename">project-detail-fields.html</td>
+                        <td class="dash-mono dash-right">2026-03-17</td>
+                        <td class="dash-mono dash-right">29 KB</td>
+                    </tr>
+                    <tr data-file="project-detail-input.html" data-title="프로젝트 진행 상황 입력" data-date="2026-02-25" data-size="19">
+                        <td><a class="dash-link" href="project-detail-input.html">프로젝트 진행 상황 입력</a></td>
+                        <td class="dash-filename">project-detail-input.html</td>
+                        <td class="dash-mono dash-right">2026-02-25</td>
+                        <td class="dash-mono dash-right">19 KB</td>
+                    </tr>
+                    <tr data-file="project-detail.html" data-title="프로젝트 상세" data-date="2026-02-25" data-size="88">
+                        <td><a class="dash-link" href="project-detail.html">프로젝트 상세</a></td>
+                        <td class="dash-filename">project-detail.html</td>
+                        <td class="dash-mono dash-right">2026-02-25</td>
+                        <td class="dash-mono dash-right">88 KB</td>
+                    </tr>
+                    <tr data-file="project-detail2.html" data-title="프로젝트 상세 2" data-date="2026-03-10" data-size="86">
+                        <td><a class="dash-link" href="project-detail2.html">프로젝트 상세 2</a></td>
+                        <td class="dash-filename">project-detail2.html</td>
+                        <td class="dash-mono dash-right">2026-03-10</td>
+                        <td class="dash-mono dash-right">86 KB</td>
+                    </tr>
+                    <tr data-file="project-detail3.html" data-title="프로젝트 상세 3" data-date="2026-03-11" data-size="82">
+                        <td><a class="dash-link" href="project-detail3.html">프로젝트 상세 3</a></td>
+                        <td class="dash-filename">project-detail3.html</td>
+                        <td class="dash-mono dash-right">2026-03-11</td>
+                        <td class="dash-mono dash-right">82 KB</td>
+                    </tr>
+                    <tr data-file="project-management.html" data-title="프로젝트 관리" data-date="2026-02-24" data-size="123">
+                        <td><a class="dash-link" href="project-management.html">프로젝트 관리</a></td>
+                        <td class="dash-filename">project-management.html</td>
+                        <td class="dash-mono dash-right">2026-02-24</td>
+                        <td class="dash-mono dash-right">123 KB</td>
+                    </tr>
+                    <tr data-file="project-management-view.html" data-title="프로젝트 관리 뷰" data-date="2026-02-23" data-size="76">
+                        <td><a class="dash-link" href="project-management-view.html">프로젝트 관리 뷰</a></td>
+                        <td class="dash-filename">project-management-view.html</td>
+                        <td class="dash-mono dash-right">2026-02-23</td>
+                        <td class="dash-mono dash-right">76 KB</td>
+                    </tr>
+                    <tr data-file="project-management-w2.html" data-title="프로젝트 관리 W2" data-date="2026-02-20" data-size="14">
+                        <td><a class="dash-link" href="project-management-w2.html">프로젝트 관리 W2</a></td>
+                        <td class="dash-filename">project-management-w2.html</td>
+                        <td class="dash-mono dash-right">2026-02-20</td>
+                        <td class="dash-mono dash-right">14 KB</td>
+                    </tr>
+                    <tr data-file="project-detail-spec.md" data-title="프로젝트 상세 스펙" data-date="2026-03-10" data-size="26">
+                        <td><a class="dash-link" href="project-detail-spec.md">프로젝트 상세 스펙</a></td>
+                        <td class="dash-filename">project-detail-spec.md</td>
+                        <td class="dash-mono dash-right">2026-03-10</td>
+                        <td class="dash-mono dash-right">26 KB</td>
+                    </tr>
+                    <tr data-file="project-detail-data.json" data-title="프로젝트 데이터" data-date="2026-02-25" data-size-raw="1.2" data-size="1.2">
+                        <td><a class="dash-link" href="project-detail-data.json">프로젝트 데이터</a></td>
+                        <td class="dash-filename">project-detail-data.json</td>
+                        <td class="dash-mono dash-right">2026-02-25</td>
+                        <td class="dash-mono dash-right">1.2 KB</td>
+                    </tr>
+                </tbody>
+            </table>
         </div>
-
-        <div class="grid">
-            <a class="card" href="project-detail.html">
-                <div class="card-top">
-                    <div class="card-icon icon-orange">📊</div>
-                    <span class="card-arrow">→</span>
-                </div>
-                <div class="card-title">프로젝트 상세</div>
-                <span class="card-badge badge-orange">detail</span>
-            </a>
-            <a class="card" href="project-detail2.html">
-                <div class="card-top">
-                    <div class="card-icon icon-yellow">📈</div>
-                    <span class="card-arrow">→</span>
-                </div>
-                <div class="card-title">프로젝트 상세 2</div>
-                <span class="card-badge badge-yellow">detail v2</span>
-            </a>
-            <a class="card" href="project-detail3.html">
-                <div class="card-top">
-                    <div class="card-icon icon-pink">🚀</div>
-                    <span class="card-arrow">→</span>
-                </div>
-                <div class="card-title">프로젝트 상세 3</div>
-                <span class="card-badge badge-pink">detail v3</span>
-            </a>
-        </div>
-
-        <div class="divider"></div>
 
     </div>
 
@@ -688,6 +762,49 @@
 </div>
 
 <script>
+    // ── Dashboard table sort ──
+    let sortState = { col: null, dir: 'asc' };
+
+    document.querySelectorAll('.dash-table th.sortable').forEach(th => {
+        th.addEventListener('click', () => {
+            const col = th.dataset.col;
+            if (sortState.col === col) {
+                sortState.dir = sortState.dir === 'asc' ? 'desc' : 'asc';
+            } else {
+                sortState.col = col;
+                sortState.dir = 'asc';
+            }
+
+            // Update header styles
+            document.querySelectorAll('.dash-table th').forEach(h => h.classList.remove('sort-active'));
+            document.querySelectorAll('.sort-icon').forEach(i => { i.classList.remove('asc', 'desc'); i.textContent = '↕'; });
+            th.classList.add('sort-active');
+            const icon = th.querySelector('.sort-icon');
+            icon.classList.add(sortState.dir);
+            icon.textContent = sortState.dir === 'asc' ? '↑' : '↓';
+
+            // Sort rows
+            const tbody = document.getElementById('dashBody');
+            const rows = [...tbody.querySelectorAll('tr')];
+            rows.sort((a, b) => {
+                let av, bv;
+                if (col === 'size') {
+                    av = parseFloat(a.dataset.size); bv = parseFloat(b.dataset.size);
+                } else if (col === 'date') {
+                    av = a.dataset.date; bv = b.dataset.date;
+                } else if (col === 'title') {
+                    av = a.dataset.title; bv = b.dataset.title;
+                } else {
+                    av = a.dataset.file; bv = b.dataset.file;
+                }
+                if (av < bv) return sortState.dir === 'asc' ? -1 : 1;
+                if (av > bv) return sortState.dir === 'asc' ? 1 : -1;
+                return 0;
+            });
+            rows.forEach(r => tbody.appendChild(r));
+        });
+    });
+
     // ── View switch ──
     function switchView(name) {
         document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
