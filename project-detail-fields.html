@@ -1,0 +1,775 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Data Entity 등록</title>
+<style>
+  :root {
+    --bg-primary:  #0d1117;
+    --bg-surface:  #161b27;
+    --bg-card:     #1c2333;
+    --bg-row-alt:  #192030;
+    --bg-hover:    #1e2a3f;
+    --border:      #2d3a52;
+    --border-mid:  #3a4d6a;
+    --border-hi:   #4d6380;
+    --text-primary:   #f0f3fa;
+    --text-secondary: #a8b5cc;
+    --text-muted:     #6b7fa0;
+    --accent-blue:    #5eaaff;
+    --accent-cyan:    #18e8ff;
+    --accent-green:   #22e8a0;
+    --accent-purple:  #c47fff;
+    --accent-orange:  #ffaa55;
+    --accent-red:     #ff5c7a;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
+    font-size: 14px;
+    min-height: 100vh;
+    padding: 36px 28px 60px;
+  }
+
+  /* ── Header ── */
+  .page-header {
+    max-width: 1140px;
+    margin: 0 auto 36px;
+    display: flex;
+    align-items: flex-end;
+    gap: 16px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid var(--border-mid);
+  }
+  .page-header h1 {
+    font-size: 24px;
+    font-weight: 700;
+    color: #ffffff;
+    letter-spacing: -0.4px;
+  }
+  .page-header h1 span {
+    background: linear-gradient(135deg, #18e8ff, #5eaaff);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  .page-header .subtitle {
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 4px;
+  }
+
+  /* ── Section block ── */
+  .section-block {
+    max-width: 1140px;
+    margin: 0 auto 32px;
+    background: var(--bg-surface);
+    border: 1px solid var(--border-mid);
+    border-radius: 14px;
+    overflow: hidden;
+    box-shadow: 0 2px 20px rgba(0,0,0,0.4), 0 0 0 1px rgba(255,255,255,0.03);
+  }
+
+  .section-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 15px 22px;
+    background: linear-gradient(90deg, #1c2a42, #1c2333);
+    border-bottom: 1px solid var(--border-mid);
+    border-left: 3px solid var(--accent-blue);
+  }
+  .section-header.cyan-accent { border-left-color: var(--accent-cyan); }
+
+  .section-icon {
+    width: 30px;
+    height: 30px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    font-weight: 800;
+    flex-shrink: 0;
+  }
+  .section-icon.blue { background: rgba(94,170,255,0.18); color: var(--accent-blue); }
+  .section-icon.cyan { background: rgba(24,232,255,0.15); color: var(--accent-cyan); }
+
+  .section-title {
+    font-size: 15px;
+    font-weight: 700;
+    color: #ffffff;
+    letter-spacing: -0.2px;
+  }
+  .section-desc {
+    font-size: 12px;
+    color: var(--text-muted);
+    margin-left: auto;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 2px 10px;
+  }
+
+  /* ── Table ── */
+  table { width: 100%; border-collapse: collapse; }
+
+  thead tr { background: rgba(94,170,255,0.07); }
+  thead th {
+    padding: 12px 18px;
+    text-align: left;
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    border-bottom: 2px solid var(--border-mid);
+    white-space: nowrap;
+  }
+  thead th:first-child { padding-left: 22px; }
+
+  tbody tr {
+    border-bottom: 1px solid var(--border);
+    transition: background 0.12s;
+  }
+  tbody tr:nth-child(even) { background: var(--bg-row-alt); }
+  tbody tr:last-child { border-bottom: none; }
+  tbody tr:hover { background: var(--bg-hover); }
+
+  tbody td {
+    padding: 13px 18px;
+    vertical-align: middle;
+    font-size: 13.5px;
+  }
+  tbody td:first-child { padding-left: 22px; }
+
+  /* ── Label cell ── */
+  .label-cell { display: flex; align-items: center; gap: 8px; }
+  .label-name {
+    font-weight: 600;
+    color: #ffffff;
+    letter-spacing: -0.1px;
+  }
+  .badge-required {
+    font-size: 10px;
+    font-weight: 700;
+    color: #ff7a94;
+    background: rgba(255,92,122,0.14);
+    border: 1px solid rgba(255,92,122,0.35);
+    border-radius: 4px;
+    padding: 1px 6px;
+    line-height: 1.7;
+    flex-shrink: 0;
+  }
+  .badge-auto {
+    font-size: 10px;
+    font-weight: 600;
+    color: var(--text-muted);
+    background: rgba(107,127,160,0.15);
+    border: 1px solid rgba(107,127,160,0.3);
+    border-radius: 4px;
+    padding: 1px 6px;
+    line-height: 1.7;
+    flex-shrink: 0;
+  }
+
+  /* ── Type select ── */
+  .type-select-input {
+    appearance: none;
+    -webkit-appearance: none;
+    background: var(--bg-card);
+    border: 1px solid var(--border-hi);
+    border-radius: 7px;
+    font-size: 12.5px;
+    font-weight: 700;
+    font-family: inherit;
+    padding: 5px 28px 5px 11px;
+    cursor: pointer;
+    outline: none;
+    width: 118px;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%236b7fa0' stroke-width='1.8' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 9px center;
+    transition: border-color 0.15s, box-shadow 0.15s;
+  }
+  .type-select-input:hover  { border-color: var(--accent-blue); }
+  .type-select-input:focus  { border-color: var(--accent-blue); box-shadow: 0 0 0 3px rgba(94,170,255,0.18); }
+  .type-select-input option { background: #1c2333; color: var(--text-primary); }
+
+  .type-select-input[data-type="text"]   { color: var(--accent-blue);   border-color: rgba(94,170,255,0.45); }
+  .type-select-input[data-type="number"] { color: var(--accent-green);  border-color: rgba(34,232,160,0.45); }
+  .type-select-input[data-type="date"]   { color: var(--accent-purple); border-color: rgba(196,127,255,0.45); }
+
+  /* ── Length cell ── */
+  .len-wrap { display: flex; align-items: center; gap: 5px; }
+  .len-label { font-size: 12px; color: var(--text-secondary); white-space: nowrap; }
+  .len-tilde { font-size: 13px; color: var(--text-secondary); font-weight: 500; }
+  .len-input {
+    width: 62px;
+    background: var(--bg-card);
+    border: 1px solid var(--border-hi);
+    border-radius: 6px;
+    color: #ffffff;
+    font-size: 13px;
+    font-family: 'Consolas', 'Menlo', monospace;
+    font-weight: 600;
+    padding: 4px 8px;
+    outline: none;
+    text-align: right;
+    transition: border-color 0.15s, box-shadow 0.15s;
+    -moz-appearance: textfield;
+  }
+  .len-input::-webkit-inner-spin-button,
+  .len-input::-webkit-outer-spin-button { -webkit-appearance: none; }
+  .len-input:hover { border-color: var(--accent-blue); }
+  .len-input:focus { border-color: var(--accent-blue); box-shadow: 0 0 0 3px rgba(94,170,255,0.18); }
+  .len-input.small { width: 54px; }
+  .len-fixed {
+    font-family: 'Consolas', 'Menlo', monospace;
+    font-size: 12.5px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    letter-spacing: 0.5px;
+    background: rgba(196,127,255,0.08);
+    border: 1px solid rgba(196,127,255,0.2);
+    border-radius: 5px;
+    padding: 3px 9px;
+  }
+
+  /* ── Component cell ── */
+  .comp-wrap { display: flex; align-items: center; gap: 7px; }
+  .comp-icon {
+    width: 24px; height: 24px;
+    border-radius: 6px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px;
+    font-weight: 700;
+    flex-shrink: 0;
+  }
+  .comp-name { font-size: 13px; color: var(--text-secondary); font-weight: 500; }
+  .comp-note { font-size: 11.5px; color: var(--text-muted); margin-left: 2px; }
+
+  .ci-text     { background: rgba(94,170,255,0.15);  color: var(--accent-blue); }
+  .ci-number   { background: rgba(34,232,160,0.12);  color: var(--accent-green); }
+  .ci-date     { background: rgba(196,127,255,0.12); color: var(--accent-purple); }
+  .ci-select   { background: rgba(24,232,255,0.12);  color: var(--accent-cyan); }
+  .ci-range    { background: rgba(255,170,85,0.12);  color: var(--accent-orange); }
+  .ci-textarea { background: rgba(255,92,122,0.10);  color: #ff7a94; }
+  .ci-readonly { background: rgba(107,127,160,0.12); color: var(--text-muted); }
+
+  /* ── Row index ── */
+  .row-num {
+    font-size: 11.5px;
+    font-weight: 600;
+    color: var(--text-muted);
+    font-family: 'Consolas', monospace;
+  }
+
+  /* ── Legend ── */
+  .legend {
+    max-width: 1140px;
+    margin: 0 auto;
+    display: flex;
+    gap: 24px;
+    flex-wrap: wrap;
+    padding: 0 6px;
+  }
+  .legend-item {
+    display: flex; align-items: center; gap: 7px;
+    font-size: 12.5px; color: var(--text-secondary);
+  }
+  .legend-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+
+  /* ── Entity cell ── */
+  .entity-cell { vertical-align: middle; }
+  .entity-display {
+    display: inline-block;
+    font-size: 12.5px;
+    font-weight: 600;
+    font-family: 'Consolas', 'Menlo', monospace;
+    border-radius: 5px;
+    padding: 3px 10px;
+    white-space: nowrap;
+  }
+  .entity-display.entity-registered {
+    color: var(--accent-cyan);
+    background: rgba(24,232,255,0.07);
+    border: 1px solid rgba(24,232,255,0.3);
+  }
+  .entity-display.entity-none {
+    color: var(--text-muted);
+    background: rgba(107,127,160,0.08);
+    border: 1px solid rgba(107,127,160,0.2);
+    font-weight: 400;
+    font-family: inherit;
+    font-size: 12px;
+    letter-spacing: 0.2px;
+  }
+
+  /* ── Extra cell (no title) ── */
+  .extra-cell { vertical-align: middle; }
+
+  /* 등록 버튼 */
+  .btn-register {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 4px 12px;
+    font-size: 12px;
+    font-weight: 600;
+    font-family: inherit;
+    color: var(--accent-orange);
+    background: rgba(255,170,85,0.08);
+    border: 1px solid rgba(255,170,85,0.35);
+    border-radius: 6px;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: background 0.15s, border-color 0.15s, color 0.15s;
+  }
+  .btn-register:hover {
+    background: rgba(255,170,85,0.16);
+    border-color: rgba(255,170,85,0.6);
+    color: #ffc570;
+  }
+  .btn-register::before {
+    content: '+';
+    font-size: 14px;
+    font-weight: 700;
+    line-height: 1;
+  }
+
+  /* ── 일괄 등록 버튼 ── */
+  .bulk-register-wrap {
+    max-width: 1140px;
+    margin: 0 auto;
+    display: flex;
+    justify-content: flex-end;
+    padding: 0 4px;
+  }
+  .btn-bulk-register {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    padding: 9px 22px;
+    font-size: 13.5px;
+    font-weight: 700;
+    font-family: inherit;
+    color: #ffffff;
+    background: linear-gradient(135deg, rgba(255,170,85,0.25), rgba(255,140,60,0.15));
+    border: 1px solid rgba(255,170,85,0.5);
+    border-radius: 8px;
+    cursor: pointer;
+    letter-spacing: 0.2px;
+    transition: background 0.18s, border-color 0.18s, box-shadow 0.18s;
+  }
+  .btn-bulk-register:hover {
+    background: linear-gradient(135deg, rgba(255,170,85,0.38), rgba(255,140,60,0.25));
+    border-color: rgba(255,170,85,0.75);
+    box-shadow: 0 0 14px rgba(255,170,85,0.2);
+  }
+  .btn-bulk-register .btn-icon {
+    font-size: 15px;
+    line-height: 1;
+  }
+
+  /* ── Column widths ── */
+  col.c-no     { width: 50px; }
+  col.c-label  { width: 200px; }
+  col.c-type   { width: 130px; }
+  col.c-len    { width: 190px; }
+  col.c-comp   { width: 180px; }
+  col.c-entity { width: 140px; }
+  col.c-extra  { }
+</style>
+</head>
+<body>
+
+<div class="page-header">
+  <div>
+    <h1>Data Entity <span>등록</span></h1>
+  </div>
+</div>
+
+<!-- Section 1 -->
+<div class="section-block">
+  <div class="section-header">
+    <div class="section-icon blue">①</div>
+    <span class="section-title">프로젝트 진행 상황 요약</span>
+    <span class="section-desc">9개 필드 · 7개 필수</span>
+  </div>
+  <table>
+    <colgroup>
+      <col class="c-no">
+      <col class="c-label">
+      <col class="c-type">
+      <col class="c-len">
+      <col class="c-comp">
+      <col class="c-entity">
+      <col class="c-extra">
+    </colgroup>
+    <thead>
+      <tr>
+        <th>#</th>
+        <th>레이블</th>
+        <th>데이터 타입</th>
+        <th>길이 / 범위</th>
+        <th>컴포넌트</th>
+        <th>Data Entity</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="row-num">01</span></td>
+        <td>
+          <div class="label-cell">
+            <span class="label-name">프로젝트명</span>
+          </div>
+        </td>
+        <td><select class="type-select-input" data-type="text" onchange="updateTypeColor(this)"><option value="text" selected>text</option><option value="number">number</option><option value="date">date</option></select></td>
+        <td class="len-cell"><div class="len-wrap"><span class="len-label">최대</span><input type="number" class="len-input" value="100" min="1" max="99999"><span class="len-label">자</span></div></td>
+        <td>
+          <div class="comp-wrap">
+            <div class="comp-icon ci-text">Aa</div>
+            <span class="comp-name">Input Text</span>
+          </div>
+        </td>
+        <td class="entity-cell"><span class="entity-display entity-registered">프로젝트명</span></td>
+        <td class="extra-cell"></td>
+      </tr>
+      <tr>
+        <td><span class="row-num">02</span></td>
+        <td>
+          <div class="label-cell">
+            <span class="label-name">고객사명</span>
+          </div>
+        </td>
+        <td><select class="type-select-input" data-type="text" onchange="updateTypeColor(this)"><option value="text" selected>text</option><option value="number">number</option><option value="date">date</option></select></td>
+        <td class="len-cell"><div class="len-wrap"><span class="len-label">최대</span><input type="number" class="len-input" value="100" min="1" max="99999"><span class="len-label">자</span></div></td>
+        <td>
+          <div class="comp-wrap">
+            <div class="comp-icon ci-text">Aa</div>
+            <span class="comp-name">Input Text</span>
+          </div>
+        </td>
+        <td class="entity-cell"><span class="entity-display entity-none">미등록</span></td>
+        <td class="extra-cell"><button class="btn-register">등록</button></td>
+      </tr>
+      <tr>
+        <td><span class="row-num">03</span></td>
+        <td>
+          <div class="label-cell">
+            <span class="label-name">우선순위</span>
+          </div>
+        </td>
+        <td><select class="type-select-input" data-type="text" onchange="updateTypeColor(this)"><option value="text" selected>text</option><option value="number">number</option><option value="date">date</option></select></td>
+        <td class="len-cell"><div class="len-wrap"><span class="len-label">최대</span><input type="number" class="len-input" value="10" min="1" max="99999"><span class="len-label">자</span></div></td>
+        <td>
+          <div class="comp-wrap">
+            <div class="comp-icon ci-select">▾</div>
+            <span class="comp-name">Select Box</span>
+            <span class="comp-note">3개 옵션</span>
+          </div>
+        </td>
+        <td class="entity-cell"><span class="entity-display entity-none">미등록</span></td>
+        <td class="extra-cell"><button class="btn-register">등록</button></td>
+      </tr>
+      <tr>
+        <td><span class="row-num">04</span></td>
+        <td>
+          <div class="label-cell">
+            <span class="label-name">계약 시작일</span>
+          </div>
+        </td>
+        <td><select class="type-select-input" data-type="date" onchange="updateTypeColor(this)"><option value="text">text</option><option value="number">number</option><option value="date" selected>date</option></select></td>
+        <td class="len-cell"><span class="len-fixed">YYYY-MM-DD</span></td>
+        <td>
+          <div class="comp-wrap">
+            <div class="comp-icon ci-date">📅</div>
+            <span class="comp-name">Date Picker</span>
+          </div>
+        </td>
+        <td class="entity-cell"><span class="entity-display entity-registered">계약 시작일</span></td>
+        <td class="extra-cell"></td>
+      </tr>
+      <tr>
+        <td><span class="row-num">05</span></td>
+        <td>
+          <div class="label-cell">
+            <span class="label-name">계약 종료일</span>
+          </div>
+        </td>
+        <td><select class="type-select-input" data-type="date" onchange="updateTypeColor(this)"><option value="text">text</option><option value="number">number</option><option value="date" selected>date</option></select></td>
+        <td class="len-cell"><span class="len-fixed">YYYY-MM-DD</span></td>
+        <td>
+          <div class="comp-wrap">
+            <div class="comp-icon ci-date">📅</div>
+            <span class="comp-name">Date Picker</span>
+          </div>
+        </td>
+        <td class="entity-cell"><span class="entity-display entity-registered">계약 종료일</span></td>
+        <td class="extra-cell"></td>
+      </tr>
+      <tr>
+        <td><span class="row-num">06</span></td>
+        <td>
+          <div class="label-cell">
+            <span class="label-name">경과 일수</span>
+          </div>
+        </td>
+        <td><select class="type-select-input" data-type="number" onchange="updateTypeColor(this)"><option value="text">text</option><option value="number" selected>number</option><option value="date">date</option></select></td>
+        <td class="len-cell"><div class="len-wrap"><input type="number" class="len-input small" value="0" placeholder="min"><span class="len-tilde">~</span><input type="number" class="len-input small" value="9999" placeholder="max"></div></td>
+        <td>
+          <div class="comp-wrap">
+            <div class="comp-icon ci-readonly">—</div>
+            <span class="comp-name">Readonly</span>
+            <span class="comp-note">시작일 기준 계산</span>
+          </div>
+        </td>
+        <td class="entity-cell"><span class="entity-display entity-none">미등록</span></td>
+        <td class="extra-cell"><button class="btn-register">등록</button></td>
+      </tr>
+      <tr>
+        <td><span class="row-num">07</span></td>
+        <td>
+          <div class="label-cell">
+            <span class="label-name">남은 일수</span>
+          </div>
+        </td>
+        <td><select class="type-select-input" data-type="number" onchange="updateTypeColor(this)"><option value="text">text</option><option value="number" selected>number</option><option value="date">date</option></select></td>
+        <td class="len-cell"><div class="len-wrap"><input type="number" class="len-input small" value="0" placeholder="min"><span class="len-tilde">~</span><input type="number" class="len-input small" value="9999" placeholder="max"></div></td>
+        <td>
+          <div class="comp-wrap">
+            <div class="comp-icon ci-readonly">—</div>
+            <span class="comp-name">Readonly</span>
+            <span class="comp-note">종료일 기준 계산</span>
+          </div>
+        </td>
+        <td class="entity-cell"><span class="entity-display entity-none">미등록</span></td>
+        <td class="extra-cell"><button class="btn-register">등록</button></td>
+      </tr>
+      <tr>
+        <td><span class="row-num">08</span></td>
+        <td>
+          <div class="label-cell">
+            <span class="label-name">담당자</span>
+          </div>
+        </td>
+        <td><select class="type-select-input" data-type="text" onchange="updateTypeColor(this)"><option value="text" selected>text</option><option value="number">number</option><option value="date">date</option></select></td>
+        <td class="len-cell"><div class="len-wrap"><span class="len-label">최대</span><input type="number" class="len-input" value="50" min="1" max="99999"><span class="len-label">자</span></div></td>
+        <td>
+          <div class="comp-wrap">
+            <div class="comp-icon ci-text">Aa</div>
+            <span class="comp-name">Input Text</span>
+          </div>
+        </td>
+        <td class="entity-cell"><span class="entity-display entity-registered">담당자</span></td>
+        <td class="extra-cell"></td>
+      </tr>
+      <tr>
+        <td><span class="row-num">09</span></td>
+        <td>
+          <div class="label-cell">
+            <span class="label-name">전체 진행률</span>
+          </div>
+        </td>
+        <td><select class="type-select-input" data-type="number" onchange="updateTypeColor(this)"><option value="text">text</option><option value="number" selected>number</option><option value="date">date</option></select></td>
+        <td class="len-cell"><div class="len-wrap"><input type="number" class="len-input small" value="0" placeholder="min"><span class="len-tilde">~</span><input type="number" class="len-input small" value="100" placeholder="max"></div></td>
+        <td>
+          <div class="comp-wrap">
+            <div class="comp-icon ci-range">↔</div>
+            <span class="comp-name">Range Slider</span>
+            <span class="comp-note">step: 1</span>
+          </div>
+        </td>
+        <td class="entity-cell"><span class="entity-display entity-none">미등록</span></td>
+        <td class="extra-cell"><button class="btn-register">등록</button></td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- Section 2 -->
+<div class="section-block">
+  <div class="section-header cyan-accent">
+    <div class="section-icon cyan">②</div>
+    <span class="section-title">마일스톤 진행현황</span>
+    <span class="section-desc">6개 필드 · 2개 필수 · 반복 입력</span>
+  </div>
+  <table>
+    <colgroup>
+      <col class="c-no">
+      <col class="c-label">
+      <col class="c-type">
+      <col class="c-len">
+      <col class="c-comp">
+      <col class="c-entity">
+      <col class="c-extra">
+    </colgroup>
+    <thead>
+      <tr>
+        <th>#</th>
+        <th>레이블</th>
+        <th>데이터 타입</th>
+        <th>길이 / 범위</th>
+        <th>컴포넌트</th>
+        <th>Data Entity</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="row-num">01</span></td>
+        <td>
+          <div class="label-cell">
+            <span class="label-name">단계명</span>
+          </div>
+        </td>
+        <td><select class="type-select-input" data-type="text" onchange="updateTypeColor(this)"><option value="text" selected>text</option><option value="number">number</option><option value="date">date</option></select></td>
+        <td class="len-cell"><div class="len-wrap"><span class="len-label">최대</span><input type="number" class="len-input" value="100" min="1" max="99999"><span class="len-label">자</span></div></td>
+        <td>
+          <div class="comp-wrap">
+            <div class="comp-icon ci-text">Aa</div>
+            <span class="comp-name">Input Text</span>
+          </div>
+        </td>
+        <td class="entity-cell"><span class="entity-display entity-registered">단계명</span></td>
+        <td class="extra-cell"></td>
+      </tr>
+      <tr>
+        <td><span class="row-num">02</span></td>
+        <td>
+          <div class="label-cell">
+            <span class="label-name">시작일</span>
+          </div>
+        </td>
+        <td><select class="type-select-input" data-type="date" onchange="updateTypeColor(this)"><option value="text">text</option><option value="number">number</option><option value="date" selected>date</option></select></td>
+        <td class="len-cell"><span class="len-fixed">YYYY-MM-DD</span></td>
+        <td>
+          <div class="comp-wrap">
+            <div class="comp-icon ci-date">📅</div>
+            <span class="comp-name">Date Picker</span>
+          </div>
+        </td>
+        <td class="entity-cell"><span class="entity-display entity-registered">시작일</span></td>
+        <td class="extra-cell"></td>
+      </tr>
+      <tr>
+        <td><span class="row-num">03</span></td>
+        <td>
+          <div class="label-cell">
+            <span class="label-name">종료일</span>
+          </div>
+        </td>
+        <td><select class="type-select-input" data-type="date" onchange="updateTypeColor(this)"><option value="text">text</option><option value="number">number</option><option value="date" selected>date</option></select></td>
+        <td class="len-cell"><span class="len-fixed">YYYY-MM-DD</span></td>
+        <td>
+          <div class="comp-wrap">
+            <div class="comp-icon ci-date">📅</div>
+            <span class="comp-name">Date Picker</span>
+          </div>
+        </td>
+        <td class="entity-cell"><span class="entity-display entity-none">미등록</span></td>
+        <td class="extra-cell"><button class="btn-register">등록</button></td>
+      </tr>
+      <tr>
+        <td><span class="row-num">04</span></td>
+        <td>
+          <div class="label-cell">
+            <span class="label-name">상태</span>
+          </div>
+        </td>
+        <td><select class="type-select-input" data-type="text" onchange="updateTypeColor(this)"><option value="text" selected>text</option><option value="number">number</option><option value="date">date</option></select></td>
+        <td class="len-cell"><div class="len-wrap"><span class="len-label">최대</span><input type="number" class="len-input" value="10" min="1" max="99999"><span class="len-label">자</span></div></td>
+        <td>
+          <div class="comp-wrap">
+            <div class="comp-icon ci-select">▾</div>
+            <span class="comp-name">Select Box</span>
+            <span class="comp-note">3개 옵션</span>
+          </div>
+        </td>
+        <td class="entity-cell"><span class="entity-display entity-none">미등록</span></td>
+        <td class="extra-cell"><button class="btn-register">등록</button></td>
+      </tr>
+      <tr>
+        <td><span class="row-num">05</span></td>
+        <td>
+          <div class="label-cell">
+            <span class="label-name">단계 진행률</span>
+          </div>
+        </td>
+        <td><select class="type-select-input" data-type="number" onchange="updateTypeColor(this)"><option value="text">text</option><option value="number" selected>number</option><option value="date">date</option></select></td>
+        <td class="len-cell"><div class="len-wrap"><input type="number" class="len-input small" value="0" placeholder="min"><span class="len-tilde">~</span><input type="number" class="len-input small" value="100" placeholder="max"></div></td>
+        <td>
+          <div class="comp-wrap">
+            <div class="comp-icon ci-range">↔</div>
+            <span class="comp-name">Range Slider</span>
+            <span class="comp-note">진행중 상태시 표시</span>
+          </div>
+        </td>
+        <td class="entity-cell"><span class="entity-display entity-none">미등록</span></td>
+        <td class="extra-cell"><button class="btn-register">등록</button></td>
+      </tr>
+      <tr>
+        <td><span class="row-num">06</span></td>
+        <td>
+          <div class="label-cell">
+            <span class="label-name">작업 내용</span>
+          </div>
+        </td>
+        <td><select class="type-select-input" data-type="text" onchange="updateTypeColor(this)"><option value="text" selected>text</option><option value="number">number</option><option value="date">date</option></select></td>
+        <td class="len-cell"><div class="len-wrap"><span class="len-label">최대</span><input type="number" class="len-input" value="500" min="1" max="99999"><span class="len-label">자</span></div></td>
+        <td>
+          <div class="comp-wrap">
+            <div class="comp-icon ci-textarea">¶</div>
+            <span class="comp-name">Textarea</span>
+            <span class="comp-note">4행</span>
+          </div>
+        </td>
+        <td class="entity-cell"><span class="entity-display entity-none">미등록</span></td>
+        <td class="extra-cell"><button class="btn-register">등록</button></td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+
+<div class="bulk-register-wrap">
+  <button class="btn-bulk-register">
+    <span class="btn-icon">⊕</span>
+    Data Entity 일괄 등록
+  </button>
+</div>
+
+<script>
+  function updateTypeColor(sel) {
+    const type = sel.value;
+    sel.setAttribute('data-type', type);
+    // update sibling length cell
+    const td = sel.closest('tr').querySelector('.len-cell');
+    if (!td) return;
+    const prev = td.dataset;
+    if (type === 'text') {
+      const curVal = getLenVal(td) || 100;
+      td.innerHTML = `<div class="len-wrap"><span class="len-label">최대</span><input type="number" class="len-input" value="${curVal}" min="1" max="99999"><span class="len-label">자</span></div>`;
+    } else if (type === 'number') {
+      td.innerHTML = `<div class="len-wrap"><input type="number" class="len-input small" value="0" placeholder="min"><span class="len-tilde">~</span><input type="number" class="len-input small" value="100" placeholder="max"></div>`;
+    } else if (type === 'date') {
+      td.innerHTML = `<span class="len-fixed">YYYY-MM-DD</span>`;
+    }
+  }
+  function getLenVal(td) {
+    const inp = td.querySelector('input[type="number"]');
+    return inp ? inp.value : null;
+  }
+</script>
+</body>
+</html>

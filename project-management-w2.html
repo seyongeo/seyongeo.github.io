@@ -1,0 +1,478 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>프로젝트 관리</title>
+<style>
+/* =========================================================
+   WebSquare-style Reset & Base
+   ========================================================= */
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: '맑은 고딕', 'Malgun Gothic', Dotum, Arial, sans-serif;
+  font-size: 12px;
+  color: #333;
+  background: #fff;
+}
+
+/* =========================================================
+   Layout
+   ========================================================= */
+.w2-page { padding: 12px 14px; }
+
+/* ── 페이지 타이틀 ── */
+.w2-page-title {
+  font-size: 14px;
+  font-weight: bold;
+  color: #222;
+  margin-bottom: 5px;
+  padding-bottom: 4px;
+  border-bottom: 1px solid #c0c0c0;
+}
+
+/* ── 안내 문구 ── */
+.w2-notice {
+  color: #c00;
+  font-size: 11px;
+  margin: 5px 0 7px;
+}
+
+/* ── 상단 버튼 영역 ── */
+.w2-toolbar {
+  float: right;
+  margin-top: -22px;   /* title 옆으로 올림 */
+}
+.w2-toolbar::after { content:''; display:block; clear:both; }
+
+/* =========================================================
+   WebSquare Button (w2btn)
+   ========================================================= */
+.w2btn {
+  display: inline-block;
+  height: 24px;
+  padding: 0 12px;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: bold;
+  line-height: 22px;
+  cursor: pointer;
+  border: 1px solid transparent;
+  border-radius: 2px;
+  vertical-align: middle;
+  white-space: nowrap;
+  text-align: center;
+}
+/* 기본 스카이블루 계열 (조회/저장/초기화/기간/검색) */
+.w2btn-blue {
+  background-color: #4db6d4;
+  border-color: #3aa0be;
+  color: #fff;
+}
+.w2btn-blue:hover { background-color: #3aa0be; }
+
+/* 그린 (행추가) */
+.w2btn-green {
+  background-color: #4db6d4;
+  border-color: #3aa0be;
+  color: #fff;
+}
+/* 레드 (행삭제) */
+.w2btn-red {
+  background-color: #d9534f;
+  border-color: #c9302c;
+  color: #fff;
+}
+.w2btn-red:hover { background-color: #c9302c; }
+
+/* 아이콘 버튼 (검색 돋보기) */
+.w2btn-icon {
+  width: 24px;
+  padding: 0;
+  font-size: 13px;
+}
+/* 작은 버튼 */
+.w2btn-sm {
+  height: 22px;
+  padding: 0 8px;
+  line-height: 20px;
+  font-size: 11px;
+  font-weight: normal;
+}
+
+/* =========================================================
+   WebSquare Form Table (w2form)
+   ========================================================= */
+.w2form {
+  width: 100%;
+  border-collapse: collapse;
+  border-top: 1px solid #aaa;
+  border-left: 1px solid #ccc;
+  margin-bottom: 10px;
+  table-layout: fixed;
+}
+.w2form th, .w2form td {
+  border-right: 1px solid #ccc;
+  border-bottom: 1px solid #ccc;
+  padding: 0 6px;
+  height: 26px;
+  vertical-align: middle;
+}
+.w2form th {
+  background-color: #eef0f3;
+  text-align: right;
+  font-weight: normal;
+  color: #444;
+  white-space: nowrap;
+}
+.w2form td {
+  background: #fff;
+}
+.req { color: #c00; }
+
+/* =========================================================
+   WebSquare Input / Select
+   ========================================================= */
+.w2input {
+  width: 100%;
+  height: 20px;
+  font-family: inherit;
+  font-size: 12px;
+  border: 1px solid #bbb;
+  padding: 0 4px;
+  background: #fff;
+  color: #333;
+  vertical-align: middle;
+}
+.w2input:focus { border-color: #4db6d4; outline: none; }
+
+.w2select {
+  width: 100%;
+  height: 20px;
+  font-family: inherit;
+  font-size: 12px;
+  border: 1px solid #bbb;
+  background: #fff;
+  color: #333;
+  padding: 0 2px;
+  vertical-align: middle;
+}
+
+/* 달력 아이콘 버튼 */
+.w2cal {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px; height: 20px;
+  border: 1px solid #bbb;
+  background: #f0f0f0;
+  border-radius: 2px;
+  cursor: pointer;
+  font-size: 11px;
+  vertical-align: middle;
+  margin: 0 1px;
+}
+
+/* =========================================================
+   WebSquare Tab
+   ========================================================= */
+.w2tab-nav {
+  display: flex;
+  border-bottom: 2px solid #4db6d4;
+  gap: 1px;
+  margin-top: 4px;
+}
+.w2tab-btn {
+  height: 28px;
+  padding: 0 14px;
+  font-family: inherit;
+  font-size: 12px;
+  background: #e8e8e8;
+  border: 1px solid #ccc;
+  border-bottom: none;
+  border-radius: 2px 2px 0 0;
+  color: #555;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.w2tab-btn.on {
+  background: #fff;
+  border-color: #aaa;
+  border-top: 2px solid #4db6d4;
+  color: #1a7fa0;
+  font-weight: bold;
+}
+.w2tab-body {
+  display: none;
+  border: 1px solid #ccc;
+  border-top: none;
+  padding: 10px;
+  min-height: 220px;
+  background: #fff;
+}
+.w2tab-body.on { display: block; }
+
+/* =========================================================
+   WebSquare Section Header
+   ========================================================= */
+.w2sec-hdr {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 4px;
+}
+.w2sec-title {
+  font-size: 12px;
+  font-weight: bold;
+  color: #222;
+}
+.w2sec-title::before {
+  content: '■';
+  color: #4db6d4;
+  margin-right: 4px;
+  font-size: 10px;
+}
+.w2sec-btns { display: flex; gap: 3px; }
+
+/* =========================================================
+   WebSquare Grid
+   ========================================================= */
+.w2grid {
+  width: 100%;
+  border-collapse: collapse;
+  border-top: 1px solid #aaa;
+  border-left: 1px solid #ccc;
+  margin-bottom: 16px;
+  table-layout: fixed;
+}
+.w2grid th, .w2grid td {
+  border-right: 1px solid #ccc;
+  border-bottom: 1px solid #ccc;
+  padding: 3px 6px;
+  height: 24px;
+  text-align: center;
+  font-size: 12px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.w2grid th {
+  background: #eef0f3;
+  font-weight: normal;
+  color: #444;
+}
+.w2grid td { background: #fff; }
+.w2grid tbody tr:hover td { background: #f5f9ff; }
+</style>
+</head>
+<body>
+<div class="w2-page">
+
+  <!-- ── 타이틀 + 상단 버튼 ── -->
+  <div class="w2-page-title">
+    프로젝트 관리
+    <span class="w2-toolbar">
+      <button class="w2btn w2btn-blue">조회</button>
+      <button class="w2btn w2btn-blue">저장</button>
+      <button class="w2btn w2btn-blue">초기화</button>
+    </span>
+  </div>
+  <div style="clear:both"></div>
+
+  <div class="w2-notice">* '프로젝트 번호'가 없으면, 신규 입력 됩니다.</div>
+
+  <!-- =========================================================
+       상단 입력 폼  (6-column: label/input × 3)
+       col 비율: 9% | 22% | 10% | 29% | 9% | 나머지
+       ========================================================= -->
+  <table class="w2form">
+    <colgroup>
+      <col style="width:9%">
+      <col style="width:22%">
+      <col style="width:10%">
+      <col style="width:29%">
+      <col style="width:9%">
+      <col>
+    </colgroup>
+    <tbody>
+
+      <!-- Row 1: 프로젝트 번호 | 기간 | PM/PL -->
+      <tr>
+        <th>프로젝트 번호</th>
+        <td style="padding:2px 5px; white-space:nowrap; overflow:visible;">
+          <input type="text" class="w2input" style="width:calc(100% - 28px);">
+          <button class="w2btn w2btn-blue w2btn-icon" style="margin-left:2px;">&#128269;</button>
+        </td>
+        <th><span class="req">* </span>프로젝트 기간</th>
+        <td style="padding:2px 5px; white-space:nowrap; overflow:visible;">
+          <input type="text" class="w2input" value="2026-02-01" style="width:82px;">
+          <span class="w2cal">&#128197;</span>
+          <span style="margin:0 3px; vertical-align:middle;">~</span>
+          <input type="text" class="w2input" value="2099-12-31" style="width:82px;">
+          <span class="w2cal">&#128197;</span>
+          <button class="w2btn w2btn-blue" style="margin-left:4px; height:20px; padding:0 9px; line-height:18px;">기간</button>
+        </td>
+        <th>PM/PL</th>
+        <td><input type="text" class="w2input"></td>
+      </tr>
+
+      <!-- Row 2: 프로젝트 명 | 진행 상태 -->
+      <tr>
+        <th><span class="req">* </span>프로젝트 명</th>
+        <td colspan="3"><input type="text" class="w2input"></td>
+        <th><span class="req">* </span>진행 상태</th>
+        <td>
+          <select class="w2select">
+            <option value="">-선택-</option>
+            <option>진행중</option>
+            <option>완료</option>
+            <option>보류</option>
+            <option>취소</option>
+          </select>
+        </td>
+      </tr>
+
+      <!-- Row 3: 프로젝트 상세 | 팀 -->
+      <tr>
+        <th>프로젝트 상세</th>
+        <td colspan="3"><input type="text" class="w2input"></td>
+        <th><span class="req">* </span>팀</th>
+        <td>
+          <select class="w2select">
+            <option value="">-선택-</option>
+            <option>SI사업 1팀</option>
+            <option>SI사업 2팀</option>
+            <option>SI사업 3팀</option>
+          </select>
+        </td>
+      </tr>
+
+      <!-- Row 4: 매출목표액 | 매출액 | 매출달성률 -->
+      <tr>
+        <th>매출목표액</th>
+        <td><input type="text" class="w2input"></td>
+        <th>매출액</th>
+        <td><input type="text" class="w2input"></td>
+        <th>매출달성률</th>
+        <td><input type="text" class="w2input"></td>
+      </tr>
+
+      <!-- Row 5: 비용목표액 | 비용소계 | (공백) -->
+      <tr>
+        <th>비용목표액</th>
+        <td><input type="text" class="w2input"></td>
+        <th>비용소계</th>
+        <td><input type="text" class="w2input"></td>
+        <td colspan="2" style="background:#f7f7f7;"></td>
+      </tr>
+
+      <!-- Row 6: 이익목표 | 이익 | 이익달성률 -->
+      <tr>
+        <th>이익목표</th>
+        <td><input type="text" class="w2input"></td>
+        <th>이익</th>
+        <td><input type="text" class="w2input"></td>
+        <th>이익달성률</th>
+        <td><input type="text" class="w2input"></td>
+      </tr>
+
+    </tbody>
+  </table>
+
+  <!-- =========================================================
+       탭 네비게이션
+       ========================================================= -->
+  <div class="w2tab-nav">
+    <button class="w2tab-btn on"  onclick="showTab(this,'pj')">프로젝트정보</button>
+    <button class="w2tab-btn"     onclick="showTab(this,'ct')">계약정보</button>
+    <button class="w2tab-btn"     onclick="showTab(this,'tg')">목표입력</button>
+    <button class="w2tab-btn"     onclick="showTab(this,'pg')">진행상황</button>
+    <button class="w2tab-btn"     onclick="showTab(this,'mp')">투입인력정보</button>
+    <button class="w2tab-btn"     onclick="showTab(this,'pl')">인력투입계획</button>
+    <button class="w2tab-btn"     onclick="showTab(this,'pu')">매입정보</button>
+    <button class="w2tab-btn"     onclick="showTab(this,'rs')">실적관리</button>
+  </div>
+
+  <!-- =========================================================
+       프로젝트정보 탭
+       ========================================================= -->
+  <div id="tab-pj" class="w2tab-body on">
+
+    <!-- 프로젝트 정보 사항 -->
+    <div class="w2sec-hdr">
+      <span class="w2sec-title">프로젝트 정보 사항</span>
+      <span class="w2sec-btns">
+        <button class="w2btn w2btn-blue w2btn-sm">+ 행추가</button>
+        <button class="w2btn w2btn-red  w2btn-sm">&#10005; 행삭제</button>
+      </span>
+    </div>
+    <table class="w2grid">
+      <colgroup>
+        <col style="width:13%"><col style="width:13%"><col style="width:11%">
+        <col style="width:16%"><col style="width:13%">
+        <col style="width:12%"><col style="width:12%"><col>
+      </colgroup>
+      <thead>
+        <tr>
+          <th>고객사</th><th>담당부서</th><th>책임자</th>
+          <th>장소</th><th>영업담당자</th>
+          <th>시작일자</th><th>종료일자</th><th>상세</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td>&nbsp;</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+        <tr><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+        <tr><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+      </tbody>
+    </table>
+
+    <!-- 프로젝트 인적 사항 -->
+    <div class="w2sec-hdr">
+      <span class="w2sec-title">프로젝트 인적 사항</span>
+      <span class="w2sec-btns">
+        <button class="w2btn w2btn-blue w2btn-sm">+ 행추가</button>
+        <button class="w2btn w2btn-red  w2btn-sm">&#10005; 행삭제</button>
+      </span>
+    </div>
+    <table class="w2grid">
+      <colgroup>
+        <col style="width:10%"><col style="width:12%"><col style="width:12%">
+        <col style="width:11%"><col style="width:14%"><col style="width:14%">
+        <col><col style="width:8%">
+      </colgroup>
+      <thead>
+        <tr>
+          <th>고객구분</th><th>담당자명</th><th>부서명</th><th>직위코드</th>
+          <th>연락처(M)</th><th>연락처(O)</th><th>E-mail</th><th>상세</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td>&nbsp;</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+        <tr><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+        <tr><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+      </tbody>
+    </table>
+
+  </div><!-- /tab-pj -->
+
+  <!-- 나머지 탭 (내용 미정) -->
+  <div id="tab-ct" class="w2tab-body"></div>
+  <div id="tab-tg" class="w2tab-body"></div>
+  <div id="tab-pg" class="w2tab-body"></div>
+  <div id="tab-mp" class="w2tab-body"></div>
+  <div id="tab-pl" class="w2tab-body"></div>
+  <div id="tab-pu" class="w2tab-body"></div>
+  <div id="tab-rs" class="w2tab-body"></div>
+
+</div><!-- /w2-page -->
+
+<script>
+function showTab(btn, id) {
+  document.querySelectorAll('.w2tab-btn').forEach(b  => b.classList.remove('on'));
+  document.querySelectorAll('.w2tab-body').forEach(p => p.classList.remove('on'));
+  btn.classList.add('on');
+  document.getElementById('tab-' + id).classList.add('on');
+}
+</script>
+</body>
+</html>

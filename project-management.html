@@ -1,0 +1,1429 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>프로젝트 관리</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: '맑은 고딕', 'Malgun Gothic', dotum, sans-serif;
+    font-size: 12px;
+    color: #222;
+    background: #fff;
+  }
+  .wrap { padding: 14px 16px; }
+  .page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 5px;
+  }
+  .page-title { font-size: 15px; font-weight: bold; }
+  .notice { color: #c00; margin-bottom: 8px; }
+
+  button {
+    font-family: inherit;
+    font-size: 12px;
+    cursor: pointer;
+    border-radius: 3px;
+    border: 1px solid transparent;
+    padding: 3px 13px;
+    line-height: 1.6;
+  }
+  .btn-teal  { background:#4db5d5; color:#fff; border-color:#3aa0be; }
+  .btn-teal:hover  { background:#3aa0be; }
+  .btn-red   { background:#d9534f; color:#fff; border-color:#c9302c; }
+  .btn-red:hover   { background:#c9302c; }
+  .btn-sm { padding: 2px 9px; }
+
+  input[type=text], select {
+    font-family: inherit;
+    font-size: 12px;
+    height: 22px;
+    border: 1px solid #bbb;
+    padding: 1px 4px;
+    vertical-align: middle;
+  }
+  select { padding: 1px 2px; }
+
+  .form-tbl {
+    width: 100%;
+    border-collapse: collapse;
+    border: 1px solid #c8c8c8;
+    margin-bottom: 12px;
+    table-layout: fixed;
+  }
+  .form-tbl th, .form-tbl td {
+    border: 1px solid #c8c8c8;
+    padding: 3px 7px;
+    height: 28px;
+    vertical-align: middle;
+  }
+  .form-tbl th {
+    background: #f3f3f3;
+    text-align: right;
+    font-weight: normal;
+    white-space: nowrap;
+  }
+
+  .cal-btn {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 22px; height: 22px;
+    background: #f3f3f3; border: 1px solid #bbb;
+    border-radius: 2px; cursor: pointer; font-size: 12px;
+    vertical-align: middle; margin: 0 1px;
+  }
+
+  .tab-nav {
+    display: flex;
+    gap: 2px;
+    border-bottom: 2px solid #4db5d5;
+    margin-bottom: 0;
+  }
+  .tab-nav button {
+    padding: 5px 15px;
+    background: #f0f0f0;
+    border: 1px solid #ccc;
+    border-bottom: none;
+    border-radius: 3px 3px 0 0;
+    color: #444;
+  }
+  .tab-nav button.on {
+    background: #fff;
+    border-top: 2px solid #4db5d5;
+    font-weight: bold;
+    color: #2a8faa;
+  }
+  .tab-panel {
+    border: 1px solid #ccc;
+    border-top: none;
+    padding: 12px 10px;
+    display: none;
+    min-height: 230px;
+  }
+  .tab-panel.on { display: block; }
+
+  .sec-hdr {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 5px;
+  }
+  .sec-title { font-weight: bold; }
+  .sec-btns  { display: flex; gap: 4px; }
+
+  .grid {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 18px;
+    table-layout: fixed;
+  }
+  .grid th, .grid td {
+    border: 1px solid #c8c8c8;
+    padding: 4px 8px;
+    text-align: center;
+    height: 26px;
+    white-space: nowrap;
+  }
+  .grid th { background: #f3f3f3; font-weight: normal; }
+  .grid td { background: #fff; }
+  .grid tbody tr { height: 28px; }
+
+  /* ── 진행상황 / 인력투입현황 탭 스타일 ── */
+  .pg-content {
+    --color-bg: #fff;
+    --color-surface: #fafafa;
+    --color-surface-elevated: #f3f3f3;
+    --color-border: #c8c8c8;
+    --color-text-primary: #222;
+    --color-text-secondary: #555;
+    --color-text-tertiary: #999;
+    --color-accent: #4db5d5;
+    --color-accent-light: #6bc5e0;
+    --color-success: #28a745;
+    --color-warning: #d08b00;
+    --color-danger: #d9534f;
+    --color-purple: #7c5cbf;
+    --color-cyan: #17a2b8;
+    background: var(--color-bg);
+    padding: 12px 10px;
+    font-family: '맑은 고딕', 'Malgun Gothic', dotum, sans-serif;
+    font-size: 12px;
+    color: var(--color-text-primary);
+    line-height: 1.5;
+  }
+  .pg-content .section-card {
+    background: #fff;
+    border: 1px solid #c8c8c8;
+    border-radius: 3px;
+    padding: 12px;
+    margin-bottom: 12px;
+  }
+  .pg-content .section-title {
+    font-size: 12px; font-weight: bold;
+    color: #222;
+    margin-bottom: 10px;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .pg-content .section-title::before {
+    content: '';
+    display: inline-block;
+    width: 3px; height: 13px;
+    background: #4db5d5;
+    border-radius: 1px;
+  }
+  .pg-content .priority-badge {
+    padding: 2px 7px; border-radius: 2px; font-size: 11px;
+    font-weight: bold; letter-spacing: 0;
+  }
+  .pg-content .priority-high { background: rgba(217,83,79,0.1); color: #d9534f; }
+  .pg-content .assignee-avatar {
+    width: 24px; height: 24px; border-radius: 50%;
+    background: #4db5d5;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px; font-weight: bold; color: #fff;
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="page-header">
+    <span class="page-title">프로젝트 관리</span>
+    <span>
+      <button class="btn-teal">조회</button>
+      <button class="btn-teal">저장</button>
+      <button class="btn-teal">초기화</button>
+    </span>
+  </div>
+
+  <div class="notice">* '프로젝트 번호'가 없으면, 신규 입력 됩니다.</div>
+
+  <table class="form-tbl">
+    <colgroup>
+      <col style="width:9%">
+      <col style="width:22%">
+      <col style="width:10%">
+      <col style="width:29%">
+      <col style="width:9%">
+      <col>
+    </colgroup>
+    <tbody>
+      <tr>
+        <th>프로젝트 번호</th>
+        <td style="padding:2px 5px; white-space:nowrap;">
+          <input type="text" style="width:calc(100% - 28px); vertical-align:middle;">
+          <button class="btn-teal" style="padding:2px 7px; font-size:13px; vertical-align:middle; margin-left:2px;">&#128269;</button>
+        </td>
+        <th><span style="color:#c00">* </span>프로젝트 기간</th>
+        <td style="padding:2px 5px; white-space:nowrap;">
+          <input type="text" value="2026-02-01" style="width:82px;">
+          <span class="cal-btn">&#128197;</span>
+          <span style="padding:0 3px; vertical-align:middle;">~</span>
+          <input type="text" value="2099-12-31" style="width:82px;">
+          <span class="cal-btn">&#128197;</span>
+          <button class="btn-teal" style="padding:2px 10px; margin-left:4px; vertical-align:middle;">기간</button>
+        </td>
+        <th>PM/PL</th>
+        <td><input type="text" style="width:100%;"></td>
+      </tr>
+      <tr>
+        <th><span style="color:#c00">* </span>프로젝트 명</th>
+        <td colspan="3"><input type="text" style="width:100%;"></td>
+        <th><span style="color:#c00">* </span>진행 상태</th>
+        <td>
+          <select style="width:100%;">
+            <option value="">-선택-</option>
+            <option>진행중</option><option>완료</option>
+            <option>보류</option><option>취소</option>
+          </select>
+        </td>
+      </tr>
+      <tr>
+        <th>프로젝트 상세</th>
+        <td colspan="3"><input type="text" style="width:100%;"></td>
+        <th><span style="color:#c00">* </span>팀</th>
+        <td>
+          <select style="width:100%;">
+            <option value="">-선택-</option>
+            <option>SI사업 1팀</option><option>SI사업 2팀</option><option>SI사업 3팀</option>
+          </select>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+
+  <!-- ── 매출/비용/이익 별도 그리드 ── -->
+  <table class="form-tbl" style="margin-bottom:12px;">
+    <colgroup>
+      <col style="width:9%">
+      <col style="width:22%">
+      <col style="width:10%">
+      <col style="width:29%">
+      <col style="width:9%">
+      <col>
+    </colgroup>
+    <tbody>
+      <tr>
+        <th>매출목표액</th>
+        <td><input type="text" style="width:100%;"></td>
+        <th>매출액</th>
+        <td><input type="text" style="width:100%;"></td>
+        <th>매출달성률</th>
+        <td><input type="text" style="width:100%;"></td>
+      </tr>
+      <tr>
+        <th>비용목표액</th>
+        <td><input type="text" style="width:100%;"></td>
+        <th>비용소계</th>
+        <td><input type="text" style="width:100%;"></td>
+        <th>비용달성률</th>
+        <td><input type="text" style="width:100%;"></td>
+      </tr>
+      <tr>
+        <th>이익목표</th>
+        <td><input type="text" style="width:100%;"></td>
+        <th>이익</th>
+        <td><input type="text" style="width:100%;"></td>
+        <th>이익달성률</th>
+        <td><input type="text" style="width:100%;"></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="tab-nav">
+    <button class="on"  onclick="showTab(this,'pj')">프로젝트정보</button>
+    <button onclick="showTab(this,'ct')">계약정보</button>
+    <button onclick="showTab(this,'pg')">진행상황</button>
+    <button onclick="showTab(this,'pl')">인력투입현황</button>
+    <button onclick="showTab(this,'rs')">실적관리</button>
+    <button onclick="showTab(this,'mp')">투입인력정보</button>
+    <button onclick="showTab(this,'pu')">매입정보</button>
+    <button onclick="showTab(this,'cp')">CP</button>
+  </div>
+
+  <div id="tab-pj" class="tab-panel on">
+    <div class="sec-hdr">
+      <span class="sec-title">&#9635; 프로젝트 정보 사항</span>
+      <span class="sec-btns">
+        <button class="btn-teal btn-sm">+ 행추가</button>
+        <button class="btn-red  btn-sm">&#10005; 행삭제</button>
+      </span>
+    </div>
+    <table class="grid">
+      <colgroup>
+        <col style="width:13%"><col style="width:13%"><col style="width:11%">
+        <col style="width:16%"><col style="width:13%">
+        <col style="width:11%"><col style="width:11%"><col>
+      </colgroup>
+      <thead>
+        <tr><th>고객사</th><th>담당부서</th><th>책임자</th><th>장소</th><th>영업담당자</th><th>시작일자</th><th>종료일자</th><th>상세</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>&nbsp;</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+        <tr><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+        <tr><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+      </tbody>
+    </table>
+
+    <div class="sec-hdr">
+      <span class="sec-title">&#9635; 프로젝트 인적 사항</span>
+      <span class="sec-btns">
+        <button class="btn-teal btn-sm">+ 행추가</button>
+        <button class="btn-red  btn-sm">&#10005; 행삭제</button>
+      </span>
+    </div>
+    <table class="grid">
+      <colgroup>
+        <col style="width:10%"><col style="width:12%"><col style="width:12%">
+        <col style="width:11%"><col style="width:14%"><col style="width:14%">
+        <col><col style="width:8%">
+      </colgroup>
+      <thead>
+        <tr><th>고객구분</th><th>담당자명</th><th>부서명</th><th>직위코드</th><th>연락처(M)</th><th>연락처(O)</th><th>E-mail</th><th>상세</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>&nbsp;</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+        <tr><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+        <tr><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div id="tab-ct" class="tab-panel">
+    <table class="form-tbl" style="table-layout:fixed;">
+      <colgroup>
+        <col style="width:110px;"><col style="width:200px;">
+        <col style="width:110px;"><col style="width:200px;">
+        <col style="width:130px;"><col>
+      </colgroup>
+      <tbody>
+        <tr>
+          <th>계약번호</th>
+          <td colspan="2"><input type="text" style="width:100%;"></td>
+          <th>계약종류</th>
+          <td colspan="2"><select style="width:160px;"><option>일반계약</option></select></td>
+        </tr>
+        <tr>
+          <th>승인구분</th>
+          <td colspan="2"><select style="width:160px;"><option>승인완료</option></select></td>
+          <th>계약명</th>
+          <td colspan="2"><input type="text" style="width:100%;" value="업무 시스템 UI 전환 2차 프로젝트"></td>
+        </tr>
+        <tr>
+          <th>계약상세</th>
+          <td colspan="5"><input type="text" style="width:100%;" value="업무 시스템 UI 전환 2차 프로젝트"></td>
+        </tr>
+        <tr>
+          <th>국가정보자원관리원</th>
+          <td colspan="2"><select style="width:160px;"><option>해당 없음</option></select></td>
+          <th>총계약금액</th>
+          <td colspan="2"><input type="text" style="width:180px;text-align:right;" value="10,961,900,000"></td>
+        </tr>
+        <tr>
+          <th>계약기간</th>
+          <td colspan="2">
+            <input type="text" style="width:85px;" value="2025-12-19">
+            <span class="cal-btn">&#128197;</span>
+            &nbsp;~&nbsp;
+            <input type="text" style="width:85px;" value="2027-03-18">
+            <span class="cal-btn">&#128197;</span>
+          </td>
+          <th>계약년월</th>
+          <td colspan="2">
+            <input type="text" style="width:92px;" value="2025-12">
+            <span class="cal-btn">&#128197;</span>
+          </td>
+        </tr>
+        <tr>
+          <th>영업담당자</th>
+          <td colspan="2">
+            <input type="text" style="width:65px;" value="100274">
+            <button class="btn-sm" style="background:#f0f0f0;border:1px solid #bbb;padding:1px 6px;">&#128269;</button>
+            <span style="margin-left:4px;">김덕기</span>
+          </td>
+          <th>최종고객</th>
+          <td colspan="2">
+            <input type="text" style="width:170px;" value="메리츠화재해상보험">
+            <button class="btn-sm" style="background:#f0f0f0;border:1px solid #bbb;padding:1px 6px;">&#128269;</button>
+          </td>
+        </tr>
+        <tr>
+          <th>발주사</th>
+          <td colspan="2">
+            <input type="text" style="width:150px;" value="메리츠화재해상보험">
+            <button class="btn-sm" style="background:#f0f0f0;border:1px solid #bbb;padding:1px 6px;">&#128269;</button>
+          </td>
+          <th>주관본부</th>
+          <td colspan="2"><select style="width:160px;"><option>SI사업 2본부</option></select></td>
+        </tr>
+        <tr>
+          <th>프로젝트명</th>
+          <td colspan="2"><input type="text" style="width:100%;"></td>
+          <th>PM/PL</th>
+          <td colspan="2"><input type="text" style="width:100%;"></td>
+        </tr>
+        <tr>
+          <th>S/W지원만료일</th>
+          <td colspan="2">
+            <input type="text" style="width:92px;" value="2028-02-28">
+            <span class="cal-btn">&#128197;</span>
+          </td>
+          <th>S/W지원 만료일 후<br>유지보수 계약 대상 여부</th>
+          <td colspan="2"><select style="width:160px;"><option>해당없음</option></select></td>
+        </tr>
+        <tr>
+          <th>유지보수계약</th>
+          <td colspan="5"><input type="text" style="width:100%;"></td>
+        </tr>
+        <tr>
+          <th>대금지급조건</th>
+          <td colspan="5"><input type="text" style="width:100%;" value="선급30%, 중도금1차 20%, 중도금2차 30%, 잔금 20%"></td>
+        </tr>
+        <tr>
+          <th>영업수수료유무</th>
+          <td colspan="2"><select style="width:160px;"><option>직접계약</option></select></td>
+          <th>할인율(%)</th>
+          <td colspan="2"><input type="text" style="width:80px;text-align:right;" value="0.00"></td>
+        </tr>
+        <tr>
+          <th style="vertical-align:top;padding-top:6px;">비고</th>
+          <td colspan="5">
+            <textarea style="width:100%;height:48px;font-family:inherit;font-size:12px;border:1px solid #bbb;padding:3px 5px;resize:vertical;margin-bottom:4px;">기계약, 대금 지급 비율 및 시기 변경 예정</textarea>
+            <button class="btn-sm" style="background:#4db5d5;color:#fff;border:1px solid #3aa0be;">재승인시 변경사유를 자세히 기재해주세요.</button>
+          </td>
+        </tr>
+        <tr>
+          <th style="vertical-align:top;padding-top:6px;">변경내용</th>
+          <td colspan="5">
+            <textarea style="width:100%;height:80px;font-family:inherit;font-size:12px;border:1px solid #bbb;padding:3px 5px;resize:vertical;color:#555;">2025년12월23일 (김덕기)
+실계약 변경, 팀별 공수 변경  UX 컨설팅팀 100M/M -> 101M/M, SI사업2팀 821M/M -> 820M/M
+
+2025년12월31일 (김덕기)
+매입업체 등록</textarea>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  <div id="tab-pg" class="tab-panel">
+    <div class="pg-content">
+
+      <!-- 계약 개요 카드 -->
+      <div class="section-card" style="animation-delay:0.05s;">
+        <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 20px;">
+          <div>
+            <h2 style="font-size: 18px; font-weight: bold; margin-bottom: 8px;">메리츠 증권 2단계 개발</h2>
+            <div style="display: flex; gap: 20px; color: #555; font-size: 12px;">
+              <div style="display: flex; align-items: center; gap: 6px;">
+                <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path></svg>
+                메리츠화재
+              </div>
+              <div style="display: flex; align-items: center; gap: 6px;">
+                <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                2026.01.01 ~ 2026.10.31
+              </div>
+            </div>
+          </div>
+          <span class="priority-badge priority-high">High</span>
+        </div>
+        <div style="margin-bottom: 12px;">
+          <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+            <span style="font-size: 12px; font-weight: bold; color: #555;">전체 진행률</span>
+            <span style="font-size: 12px; font-weight: bold; color: #2a8faa;">65%</span>
+          </div>
+          <div style="height: 8px; background: #ddd; border-radius: 4px; overflow: hidden;">
+            <div style="height: 100%; width: 65%; background: linear-gradient(90deg, #4db5d5 0%, #6bc5e0 100%); border-radius: 3px;"></div>
+          </div>
+        </div>
+        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-top: 20px;">
+          <div>
+            <div style="font-size: 11px; color: #999; margin-bottom: 4px;">경과 일수</div>
+            <div style="font-size: 18px; font-weight: bold;">42일</div>
+          </div>
+          <div>
+            <div style="font-size: 11px; color: #999; margin-bottom: 4px;">남은 일수</div>
+            <div style="font-size: 18px; font-weight: bold;">261일</div>
+          </div>
+          <div>
+            <div style="font-size: 11px; color: #999; margin-bottom: 4px;">담당자</div>
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <div class="assignee-avatar">박</div>
+              <span style="font-size: 12px; font-weight: bold;">박민수</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 마일스톤 진행 현황 -->
+      <div class="section-card" style="animation-delay:0.1s;">
+        <div class="section-title">마일스톤 진행 현황</div>
+        <div style="position: relative; padding-left: 32px;">
+          <div style="position: absolute; left: 11px; top: 24px; bottom: 24px; width: 2px; background: #ddd;"></div>
+
+          <!-- 1단계 완료 -->
+          <div style="position: relative; margin-bottom: 28px;">
+            <div style="position: absolute; left: -32px; top: 4px; width: 24px; height: 24px; border-radius: 50%; background: #28a745; border: 3px solid #fff; display: flex; align-items: center; justify-content: center; z-index: 1;">
+              <svg width="12" height="12" fill="none" stroke="white" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg>
+            </div>
+            <div style="background: #fff; border: 1px solid #c8c8c8; border-radius: 3px; padding: 10px;">
+              <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 8px;">
+                <div>
+                  <div style="font-size: 12px; font-weight: bold; margin-bottom: 3px;">1단계: 요구사항 분석</div>
+                  <div style="font-size: 12px; color: #999;">2026.01.01 ~ 2026.02.15</div>
+                </div>
+                <span style="font-size: 12px; padding: 4px 10px; border-radius: 6px; background: rgba(40,167,69,0.12); color: #28a745; font-weight: 600;">완료</span>
+              </div>
+              <div style="font-size: 12px; color: #555;">• 사용자 요구사항 정의서 작성 완료<br>• 시스템 아키텍처 설계 완료</div>
+            </div>
+          </div>
+
+          <!-- 2단계 진행중 -->
+          <div style="position: relative; margin-bottom: 28px;">
+            <div style="position: absolute; left: -32px; top: 4px; width: 24px; height: 24px; border-radius: 50%; background: #4db5d5; border: 3px solid #fff; display: flex; align-items: center; justify-content: center; z-index: 1; box-shadow: 0 0 0 3px rgba(77,181,213,0.2);">
+              <div style="width: 8px; height: 8px; border-radius: 50%; background: white;"></div>
+            </div>
+            <div style="background: #f0f9fb; border: 1px solid #4db5d5; border-radius: 3px; padding: 10px;">
+              <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 8px;">
+                <div>
+                  <div style="font-size: 12px; font-weight: bold; margin-bottom: 3px;">2단계: 개발 및 구현</div>
+                  <div style="font-size: 12px; color: #999;">2026.02.16 ~ 2026.07.31</div>
+                </div>
+                <span style="font-size: 12px; padding: 4px 10px; border-radius: 6px; background: rgba(77,181,213,0.15); color: #2a8faa; font-weight: 600;">진행중</span>
+              </div>
+              <div style="font-size: 12px; color: #555; margin-bottom: 8px;">• 프론트엔드 개발 70% 완료<br>• 백엔드 API 개발 60% 완료<br>• 데이터베이스 스키마 구축 완료</div>
+              <div>
+                <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
+                  <span style="font-size: 11px; color: #999;">단계 진행률</span>
+                  <span style="font-size: 11px; font-weight: bold; color: #2a8faa;">65%</span>
+                </div>
+                <div style="height: 6px; background: #ddd; border-radius: 3px; overflow: hidden;">
+                  <div style="height: 100%; width: 65%; background: #4db5d5; border-radius: 2px;"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 3단계 대기 -->
+          <div style="position: relative; margin-bottom: 28px;">
+            <div style="position: absolute; left: -32px; top: 4px; width: 24px; height: 24px; border-radius: 50%; background: #f3f3f3; border: 2px solid #c8c8c8; z-index: 1;"></div>
+            <div style="background: #fff; border: 1px solid #c8c8c8; border-radius: 3px; padding: 10px; opacity: 0.7;">
+              <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 8px;">
+                <div>
+                  <div style="font-size: 12px; font-weight: bold; margin-bottom: 3px;">3단계: 테스트 및 QA</div>
+                  <div style="font-size: 12px; color: #999;">2026.08.01 ~ 2026.09.15</div>
+                </div>
+                <span style="font-size: 12px; padding: 4px 10px; border-radius: 6px; background: #f0f0f0; color: #999; font-weight: 600;">대기</span>
+              </div>
+              <div style="font-size: 12px; color: #999;">• 통합 테스트 예정<br>• 성능 테스트 예정<br>• 사용자 인수 테스트 예정</div>
+            </div>
+          </div>
+
+          <!-- 4단계 대기 -->
+          <div style="position: relative;">
+            <div style="position: absolute; left: -32px; top: 4px; width: 24px; height: 24px; border-radius: 50%; background: #f3f3f3; border: 2px solid #c8c8c8; z-index: 1;"></div>
+            <div style="background: #fff; border: 1px solid #c8c8c8; border-radius: 3px; padding: 10px; opacity: 0.7;">
+              <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 8px;">
+                <div>
+                  <div style="font-size: 12px; font-weight: bold; margin-bottom: 3px;">4단계: 배포 및 안정화</div>
+                  <div style="font-size: 12px; color: #999;">2026.09.16 ~ 2026.10.31</div>
+                </div>
+                <span style="font-size: 12px; padding: 4px 10px; border-radius: 6px; background: #f0f0f0; color: #999; font-weight: 600;">대기</span>
+              </div>
+              <div style="font-size: 12px; color: #999;">• 운영 환경 배포 예정<br>• 모니터링 및 안정화 예정<br>• 최종 인수 및 종료 예정</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /pg-content -->
+  </div>
+  <div id="tab-mp" class="tab-panel"></div>
+  <div id="tab-pl" class="tab-panel">
+    <div class="pg-content">
+
+      <!-- 월별 인력 투입 계획/현황 -->
+      <div class="section-card" style="animation-delay:0.15s;">
+        <div class="section-title">월별 인력 투입 계획 / 현황</div>
+        <div style="overflow-x:auto;border:1px solid #c8c8c8;">
+          <table style="width: 100%; border-collapse: collapse; font-size: 12px; min-width: 900px;">
+            <colgroup>
+              <col style="width:80px;"><col style="width:60px;"><col style="width:60px;"><col style="width:100px;">
+              <col style="width:52px;" span="10"><col style="width:64px;"><col style="width:64px;">
+            </colgroup>
+            <thead>
+              <tr>
+                <th rowspan="2" style="background:#f3f3f3;color:#555;font-weight:600;padding:10px 8px;text-align:center;border-bottom:1px solid var(--color-border);border-right:1px solid var(--color-border);">조직</th>
+                <th rowspan="2" style="background:#f3f3f3;color:#555;font-weight:600;padding:10px 8px;text-align:center;border-bottom:1px solid var(--color-border);border-right:1px solid var(--color-border);">소속</th>
+                <th rowspan="2" style="background:#f3f3f3;color:#555;font-weight:600;padding:10px 8px;text-align:center;border-bottom:1px solid var(--color-border);border-right:1px solid var(--color-border);">등급</th>
+                <th rowspan="2" style="background:#f3f3f3;color:#555;font-weight:600;padding:10px 8px;text-align:center;border-bottom:1px solid var(--color-border);border-right:1px solid var(--color-border);">역할</th>
+                <th colspan="10" style="background:#e5f3f7;color:#2a8faa;font-weight:700;padding:8px;text-align:center;border-bottom:1px solid var(--color-border);border-right:1px solid var(--color-border);">2026</th>
+                <th rowspan="2" style="background:#4db5d5;color:#fff;font-weight:bold;padding:10px 8px;text-align:center;border-bottom:1px solid var(--color-border);border-right:1px solid var(--color-border);">합계</th>
+                <th rowspan="2" style="background:#f3f3f3;color:#555;font-weight:600;padding:10px 8px;text-align:center;border-bottom:1px solid var(--color-border);">비고</th>
+              </tr>
+              <tr>
+                <th style="background:#4db5d5;color:#fff;font-weight:600;padding:8px 4px;text-align:center;border-bottom:1px solid #3aa0be;border-right:1px solid #c8c8c8;">01</th>
+                <th style="background:#4db5d5;color:#fff;font-weight:600;padding:8px 4px;text-align:center;border-bottom:1px solid #3aa0be;border-right:1px solid #c8c8c8;">02</th>
+                <th style="background:#4db5d5;color:#fff;font-weight:600;padding:8px 4px;text-align:center;border-bottom:1px solid #3aa0be;border-right:1px solid #c8c8c8;">03</th>
+                <th style="background:#4db5d5;color:#fff;font-weight:600;padding:8px 4px;text-align:center;border-bottom:1px solid #3aa0be;border-right:1px solid #c8c8c8;">04</th>
+                <th style="background:#4db5d5;color:#fff;font-weight:600;padding:8px 4px;text-align:center;border-bottom:1px solid #3aa0be;border-right:1px solid #c8c8c8;">05</th>
+                <th style="background:#4db5d5;color:#fff;font-weight:600;padding:8px 4px;text-align:center;border-bottom:1px solid #3aa0be;border-right:1px solid #c8c8c8;">06</th>
+                <th style="background:#4db5d5;color:#fff;font-weight:600;padding:8px 4px;text-align:center;border-bottom:1px solid #3aa0be;border-right:1px solid #c8c8c8;">07</th>
+                <th style="background:#4db5d5;color:#fff;font-weight:600;padding:8px 4px;text-align:center;border-bottom:1px solid #3aa0be;border-right:1px solid #c8c8c8;">08</th>
+                <th style="background:#4db5d5;color:#fff;font-weight:600;padding:8px 4px;text-align:center;border-bottom:1px solid #3aa0be;border-right:1px solid #c8c8c8;">09</th>
+                <th style="background:#4db5d5;color:#fff;font-weight:600;padding:8px 4px;text-align:center;border-bottom:1px solid #3aa0be;border-right:1px solid #c8c8c8;">10</th>
+              </tr>
+            </thead>
+            <tbody>
+              <!-- 특급 PM/PL -->
+              <tr style="border-bottom:1px solid #ddd;">
+                <td rowspan="2" style="padding:8px;text-align:center;color:#333;border-right:1px solid var(--color-border);background:#f3f3f3;font-weight:500;">SI사업 2팀</td>
+                <td rowspan="2" style="padding:8px;text-align:center;color:#666;border-right:1px solid var(--color-border);">당사</td>
+                <td rowspan="2" style="padding:8px;text-align:center;border-right:1px solid var(--color-border);"><span style="background:#e5f3f7;color:#2a8faa;padding:1px 5px;border-radius:2px;font-weight:bold;font-size:11px;">특급</span></td>
+                <td rowspan="2" style="padding:8px;text-align:center;color:#333;border-right:1px solid var(--color-border);">PM/PL</td>
+                <td style="padding:6px 4px;text-align:center;color:#333;font-weight:normal;border-right:1px solid #ddd;">1.00</td><td style="padding:6px 4px;text-align:center;color:#333;font-weight:normal;border-right:1px solid #ddd;">1.00</td><td style="padding:6px 4px;text-align:center;color:#333;font-weight:normal;border-right:1px solid #ddd;">1.00</td><td style="padding:6px 4px;text-align:center;color:#333;font-weight:normal;border-right:1px solid #ddd;">1.00</td><td style="padding:6px 4px;text-align:center;color:#333;font-weight:normal;border-right:1px solid #ddd;">1.00</td><td style="padding:6px 4px;text-align:center;color:#333;font-weight:normal;border-right:1px solid #ddd;">1.00</td><td style="padding:6px 4px;text-align:center;color:#333;font-weight:normal;border-right:1px solid #ddd;">1.00</td><td style="padding:6px 4px;text-align:center;color:#333;font-weight:normal;border-right:1px solid #ddd;">1.00</td><td style="padding:6px 4px;text-align:center;color:#333;font-weight:normal;border-right:1px solid #ddd;">1.00</td><td style="padding:6px 4px;text-align:center;color:#333;font-weight:normal;border-right:1px solid var(--color-border);">1.00</td>
+                <td style="padding:6px 4px;text-align:center;font-weight:700;color:#f59e0b;border-right:1px solid var(--color-border);">10.00</td><td style="padding:6px 4px;text-align:center;color:#999;font-size:11px;">계획</td>
+              </tr>
+              <tr style="border-bottom:1px solid var(--color-border);background:#fafafa;">
+                <td style="padding:6px 4px;text-align:center;color:#28a745;font-weight:normal;border-right:1px solid #ddd;">1.00</td><td style="padding:6px 4px;text-align:center;color:#28a745;font-weight:normal;border-right:1px solid #ddd;">1.00</td><td style="padding:6px 4px;text-align:center;color:#d9534f;font-weight:normal;border-right:1px solid #ddd;">0.80</td><td style="padding:6px 4px;text-align:center;color:#999;border-right:1px solid #ddd;">-</td><td style="padding:6px 4px;text-align:center;color:#999;border-right:1px solid #ddd;">-</td><td style="padding:6px 4px;text-align:center;color:#999;border-right:1px solid #ddd;">-</td><td style="padding:6px 4px;text-align:center;color:#999;border-right:1px solid #ddd;">-</td><td style="padding:6px 4px;text-align:center;color:#999;border-right:1px solid #ddd;">-</td><td style="padding:6px 4px;text-align:center;color:#999;border-right:1px solid #ddd;">-</td><td style="padding:6px 4px;text-align:center;color:#999;border-right:1px solid var(--color-border);">-</td>
+                <td style="padding:6px 4px;text-align:center;font-weight:700;color:#22c55e;border-right:1px solid var(--color-border);">2.80</td><td style="padding:6px 4px;text-align:center;color:#999;font-size:11px;">실적</td>
+              </tr>
+              <!-- 고급 사업관리 -->
+              <tr style="border-bottom:1px solid #ddd;">
+                <td rowspan="2" style="padding:8px;text-align:center;color:#333;border-right:1px solid var(--color-border);background:#f3f3f3;font-weight:500;">SI사업 2팀</td>
+                <td rowspan="2" style="padding:8px;text-align:center;color:#666;border-right:1px solid var(--color-border);">당사</td>
+                <td rowspan="2" style="padding:8px;text-align:center;border-right:1px solid var(--color-border);"><span style="background:#f0ebfa;color:#7c5cbf;padding:1px 5px;border-radius:2px;font-weight:bold;font-size:11px;">고급</span></td>
+                <td rowspan="2" style="padding:8px;text-align:center;color:#333;border-right:1px solid var(--color-border);">사업관리</td>
+                <td style="padding:6px 4px;text-align:center;color:#333;font-weight:normal;border-right:1px solid #ddd;">1.00</td><td style="padding:6px 4px;text-align:center;color:#333;font-weight:normal;border-right:1px solid #ddd;">1.00</td><td style="padding:6px 4px;text-align:center;color:#333;font-weight:normal;border-right:1px solid #ddd;">1.00</td><td style="padding:6px 4px;text-align:center;color:#333;font-weight:normal;border-right:1px solid #ddd;">1.00</td><td style="padding:6px 4px;text-align:center;color:#333;font-weight:normal;border-right:1px solid #ddd;">1.00</td><td style="padding:6px 4px;text-align:center;color:#333;font-weight:normal;border-right:1px solid #ddd;">1.00</td><td style="padding:6px 4px;text-align:center;color:#333;font-weight:normal;border-right:1px solid #ddd;">1.00</td><td style="padding:6px 4px;text-align:center;color:#333;font-weight:normal;border-right:1px solid #ddd;">1.00</td><td style="padding:6px 4px;text-align:center;color:#333;font-weight:normal;border-right:1px solid #ddd;">1.00</td><td style="padding:6px 4px;text-align:center;color:#333;font-weight:normal;border-right:1px solid var(--color-border);">1.00</td>
+                <td style="padding:6px 4px;text-align:center;font-weight:700;color:#f59e0b;border-right:1px solid var(--color-border);">10.00</td><td style="padding:6px 4px;text-align:center;color:#999;font-size:11px;">계획</td>
+              </tr>
+              <tr style="border-bottom:1px solid var(--color-border);background:#fafafa;">
+                <td style="padding:6px 4px;text-align:center;color:#28a745;font-weight:normal;border-right:1px solid #ddd;">1.00</td><td style="padding:6px 4px;text-align:center;color:#28a745;font-weight:normal;border-right:1px solid #ddd;">1.00</td><td style="padding:6px 4px;text-align:center;color:#28a745;font-weight:normal;border-right:1px solid #ddd;">1.00</td><td style="padding:6px 4px;text-align:center;color:#999;border-right:1px solid #ddd;">-</td><td style="padding:6px 4px;text-align:center;color:#999;border-right:1px solid #ddd;">-</td><td style="padding:6px 4px;text-align:center;color:#999;border-right:1px solid #ddd;">-</td><td style="padding:6px 4px;text-align:center;color:#999;border-right:1px solid #ddd;">-</td><td style="padding:6px 4px;text-align:center;color:#999;border-right:1px solid #ddd;">-</td><td style="padding:6px 4px;text-align:center;color:#999;border-right:1px solid #ddd;">-</td><td style="padding:6px 4px;text-align:center;color:#999;border-right:1px solid var(--color-border);">-</td>
+                <td style="padding:6px 4px;text-align:center;font-weight:700;color:#22c55e;border-right:1px solid var(--color-border);">3.00</td><td style="padding:6px 4px;text-align:center;color:#999;font-size:11px;">실적</td>
+              </tr>
+              <!-- 고급 업무분석/설계 -->
+              <tr style="border-bottom:1px solid #ddd;">
+                <td rowspan="2" style="padding:8px;text-align:center;color:#333;border-right:1px solid var(--color-border);background:#f3f3f3;font-weight:500;">SI사업 2팀</td>
+                <td rowspan="2" style="padding:8px;text-align:center;color:#666;border-right:1px solid var(--color-border);">외주</td>
+                <td rowspan="2" style="padding:8px;text-align:center;border-right:1px solid var(--color-border);"><span style="background:#f0ebfa;color:#7c5cbf;padding:1px 5px;border-radius:2px;font-weight:bold;font-size:11px;">고급</span></td>
+                <td rowspan="2" style="padding:8px;text-align:center;color:#333;border-right:1px solid var(--color-border);">업무분석/설계</td>
+                <td style="padding:6px 4px;text-align:center;color:#333;font-weight:normal;border-right:1px solid #ddd;">3.00</td><td style="padding:6px 4px;text-align:center;color:#333;font-weight:normal;border-right:1px solid #ddd;">3.00</td><td style="padding:6px 4px;text-align:center;color:#333;font-weight:normal;border-right:1px solid #ddd;">3.00</td><td style="padding:6px 4px;text-align:center;color:#333;font-weight:normal;border-right:1px solid #ddd;">3.00</td><td style="padding:6px 4px;text-align:center;color:#333;font-weight:normal;border-right:1px solid #ddd;">3.00</td><td style="padding:6px 4px;text-align:center;color:#333;font-weight:normal;border-right:1px solid #ddd;">3.00</td><td style="padding:6px 4px;text-align:center;color:#333;font-weight:normal;border-right:1px solid #ddd;">3.00</td><td style="padding:6px 4px;text-align:center;color:#333;font-weight:normal;border-right:1px solid #ddd;">2.00</td><td style="padding:6px 4px;text-align:center;color:#333;font-weight:normal;border-right:1px solid #ddd;">2.00</td><td style="padding:6px 4px;text-align:center;color:#333;font-weight:normal;border-right:1px solid var(--color-border);">2.00</td>
+                <td style="padding:6px 4px;text-align:center;font-weight:700;color:#f59e0b;border-right:1px solid var(--color-border);">28.00</td><td style="padding:6px 4px;text-align:center;color:#999;font-size:11px;">계획</td>
+              </tr>
+              <tr style="border-bottom:1px solid var(--color-border);background:#fafafa;">
+                <td style="padding:6px 4px;text-align:center;color:#28a745;font-weight:normal;border-right:1px solid #ddd;">3.00</td><td style="padding:6px 4px;text-align:center;color:#28a745;font-weight:normal;border-right:1px solid #ddd;">3.00</td><td style="padding:6px 4px;text-align:center;color:#d9534f;font-weight:normal;border-right:1px solid #ddd;">2.50</td><td style="padding:6px 4px;text-align:center;color:#999;border-right:1px solid #ddd;">-</td><td style="padding:6px 4px;text-align:center;color:#999;border-right:1px solid #ddd;">-</td><td style="padding:6px 4px;text-align:center;color:#999;border-right:1px solid #ddd;">-</td><td style="padding:6px 4px;text-align:center;color:#999;border-right:1px solid #ddd;">-</td><td style="padding:6px 4px;text-align:center;color:#999;border-right:1px solid #ddd;">-</td><td style="padding:6px 4px;text-align:center;color:#999;border-right:1px solid #ddd;">-</td><td style="padding:6px 4px;text-align:center;color:#999;border-right:1px solid var(--color-border);">-</td>
+                <td style="padding:6px 4px;text-align:center;font-weight:700;color:#22c55e;border-right:1px solid var(--color-border);">8.50</td><td style="padding:6px 4px;text-align:center;color:#999;font-size:11px;">실적</td>
+              </tr>
+              <!-- 중급 개발 -->
+              <tr style="border-bottom:1px solid #ddd;">
+                <td rowspan="2" style="padding:8px;text-align:center;color:#333;border-right:1px solid var(--color-border);background:#f3f3f3;font-weight:500;">SI사업 2팀</td>
+                <td rowspan="2" style="padding:8px;text-align:center;color:#666;border-right:1px solid var(--color-border);">외주</td>
+                <td rowspan="2" style="padding:8px;text-align:center;border-right:1px solid var(--color-border);"><span style="background:#e9f7ec;color:#28a745;padding:1px 5px;border-radius:2px;font-weight:bold;font-size:11px;">중급</span></td>
+                <td rowspan="2" style="padding:8px;text-align:center;color:#333;border-right:1px solid var(--color-border);">개발</td>
+                <td style="padding:6px 4px;text-align:center;color:#333;font-weight:normal;border-right:1px solid #ddd;">2.00</td><td style="padding:6px 4px;text-align:center;color:#333;font-weight:normal;border-right:1px solid #ddd;">2.00</td><td style="padding:6px 4px;text-align:center;color:#333;font-weight:normal;border-right:1px solid #ddd;">4.00</td><td style="padding:6px 4px;text-align:center;color:#333;font-weight:normal;border-right:1px solid #ddd;">4.00</td><td style="padding:6px 4px;text-align:center;color:#333;font-weight:normal;border-right:1px solid #ddd;">4.00</td><td style="padding:6px 4px;text-align:center;color:#333;font-weight:normal;border-right:1px solid #ddd;">4.00</td><td style="padding:6px 4px;text-align:center;color:#333;font-weight:normal;border-right:1px solid #ddd;">4.00</td><td style="padding:6px 4px;text-align:center;color:#333;font-weight:normal;border-right:1px solid #ddd;">4.00</td><td style="padding:6px 4px;text-align:center;color:#333;font-weight:normal;border-right:1px solid #ddd;">2.00</td><td style="padding:6px 4px;text-align:center;color:#333;font-weight:normal;border-right:1px solid var(--color-border);">2.00</td>
+                <td style="padding:6px 4px;text-align:center;font-weight:700;color:#f59e0b;border-right:1px solid var(--color-border);">32.00</td><td style="padding:6px 4px;text-align:center;color:#999;font-size:11px;">계획</td>
+              </tr>
+              <tr style="border-bottom:1px solid var(--color-border);background:#fafafa;">
+                <td style="padding:6px 4px;text-align:center;color:#28a745;font-weight:normal;border-right:1px solid #ddd;">2.00</td><td style="padding:6px 4px;text-align:center;color:#28a745;font-weight:normal;border-right:1px solid #ddd;">2.00</td><td style="padding:6px 4px;text-align:center;color:#28a745;font-weight:normal;border-right:1px solid #ddd;">4.00</td><td style="padding:6px 4px;text-align:center;color:#999;border-right:1px solid #ddd;">-</td><td style="padding:6px 4px;text-align:center;color:#999;border-right:1px solid #ddd;">-</td><td style="padding:6px 4px;text-align:center;color:#999;border-right:1px solid #ddd;">-</td><td style="padding:6px 4px;text-align:center;color:#999;border-right:1px solid #ddd;">-</td><td style="padding:6px 4px;text-align:center;color:#999;border-right:1px solid #ddd;">-</td><td style="padding:6px 4px;text-align:center;color:#999;border-right:1px solid #ddd;">-</td><td style="padding:6px 4px;text-align:center;color:#999;border-right:1px solid var(--color-border);">-</td>
+                <td style="padding:6px 4px;text-align:center;font-weight:700;color:#22c55e;border-right:1px solid var(--color-border);">8.00</td><td style="padding:6px 4px;text-align:center;color:#999;font-size:11px;">실적</td>
+              </tr>
+              <!-- 초급 개발 -->
+              <tr style="border-bottom:1px solid #ddd;">
+                <td rowspan="2" style="padding:8px;text-align:center;color:#333;border-right:1px solid var(--color-border);background:#f3f3f3;font-weight:500;">SI사업 2팀</td>
+                <td rowspan="2" style="padding:8px;text-align:center;color:#666;border-right:1px solid var(--color-border);">외주</td>
+                <td rowspan="2" style="padding:8px;text-align:center;border-right:1px solid var(--color-border);"><span style="background:#fff3d6;color:#b07d00;padding:1px 5px;border-radius:2px;font-weight:bold;font-size:11px;">초급</span></td>
+                <td rowspan="2" style="padding:8px;text-align:center;color:#333;border-right:1px solid var(--color-border);">개발</td>
+                <td style="padding:6px 4px;text-align:center;color:#333;font-weight:normal;border-right:1px solid #ddd;">2.00</td><td style="padding:6px 4px;text-align:center;color:#333;font-weight:normal;border-right:1px solid #ddd;">2.00</td><td style="padding:6px 4px;text-align:center;color:#333;font-weight:normal;border-right:1px solid #ddd;">4.00</td><td style="padding:6px 4px;text-align:center;color:#333;font-weight:normal;border-right:1px solid #ddd;">4.00</td><td style="padding:6px 4px;text-align:center;color:#333;font-weight:normal;border-right:1px solid #ddd;">4.00</td><td style="padding:6px 4px;text-align:center;color:#333;font-weight:normal;border-right:1px solid #ddd;">4.00</td><td style="padding:6px 4px;text-align:center;color:#333;font-weight:normal;border-right:1px solid #ddd;">4.00</td><td style="padding:6px 4px;text-align:center;color:#333;font-weight:normal;border-right:1px solid #ddd;">4.00</td><td style="padding:6px 4px;text-align:center;color:#333;font-weight:normal;border-right:1px solid #ddd;">2.00</td><td style="padding:6px 4px;text-align:center;color:#333;font-weight:normal;border-right:1px solid var(--color-border);">2.00</td>
+                <td style="padding:6px 4px;text-align:center;font-weight:700;color:#f59e0b;border-right:1px solid var(--color-border);">32.00</td><td style="padding:6px 4px;text-align:center;color:#999;font-size:11px;">계획</td>
+              </tr>
+              <tr style="border-bottom:1px solid var(--color-border);background:#fafafa;">
+                <td style="padding:6px 4px;text-align:center;color:#28a745;font-weight:normal;border-right:1px solid #ddd;">2.00</td><td style="padding:6px 4px;text-align:center;color:#28a745;font-weight:normal;border-right:1px solid #ddd;">2.00</td><td style="padding:6px 4px;text-align:center;color:#d9534f;font-weight:normal;border-right:1px solid #ddd;">3.50</td><td style="padding:6px 4px;text-align:center;color:#999;border-right:1px solid #ddd;">-</td><td style="padding:6px 4px;text-align:center;color:#999;border-right:1px solid #ddd;">-</td><td style="padding:6px 4px;text-align:center;color:#999;border-right:1px solid #ddd;">-</td><td style="padding:6px 4px;text-align:center;color:#999;border-right:1px solid #ddd;">-</td><td style="padding:6px 4px;text-align:center;color:#999;border-right:1px solid #ddd;">-</td><td style="padding:6px 4px;text-align:center;color:#999;border-right:1px solid #ddd;">-</td><td style="padding:6px 4px;text-align:center;color:#999;border-right:1px solid var(--color-border);">-</td>
+                <td style="padding:6px 4px;text-align:center;font-weight:700;color:#22c55e;border-right:1px solid var(--color-border);">7.50</td><td style="padding:6px 4px;text-align:center;color:#999;font-size:11px;">실적</td>
+              </tr>
+              <!-- 전체 합계 계획 -->
+              <tr style="background:#e5f3f7;">
+                <td colspan="4" style="padding:10px 8px;text-align:right;color:#2a8faa;font-weight:700;border-right:1px solid var(--color-border);font-size:13px;">전체 합계 (계획)</td>
+                <td style="padding:8px 4px;text-align:center;font-weight:700;color:#6b91ff;border-right:1px solid #ddd;">9.00</td><td style="padding:8px 4px;text-align:center;font-weight:700;color:#6b91ff;border-right:1px solid #ddd;">9.00</td><td style="padding:8px 4px;text-align:center;font-weight:700;color:#6b91ff;border-right:1px solid #ddd;">13.00</td><td style="padding:8px 4px;text-align:center;font-weight:700;color:#6b91ff;border-right:1px solid #ddd;">13.00</td><td style="padding:8px 4px;text-align:center;font-weight:700;color:#6b91ff;border-right:1px solid #ddd;">13.00</td><td style="padding:8px 4px;text-align:center;font-weight:700;color:#6b91ff;border-right:1px solid #ddd;">13.00</td><td style="padding:8px 4px;text-align:center;font-weight:700;color:#6b91ff;border-right:1px solid #ddd;">13.00</td><td style="padding:8px 4px;text-align:center;font-weight:700;color:#6b91ff;border-right:1px solid #ddd;">12.00</td><td style="padding:8px 4px;text-align:center;font-weight:700;color:#6b91ff;border-right:1px solid #ddd;">10.00</td><td style="padding:8px 4px;text-align:center;font-weight:700;color:#6b91ff;border-right:1px solid var(--color-border);">8.00</td>
+                <td style="padding:8px 4px;text-align:center;font-weight:700;color:#333;font-size:13px;border-right:1px solid var(--color-border);">112.00</td><td></td>
+              </tr>
+              <tr style="background:#eef7fa;">
+                <td colspan="4" style="padding:10px 8px;text-align:right;color:#28a745;font-weight:bold;border-right:1px solid var(--color-border);font-size:13px;">전체 합계 (실적)</td>
+                <td style="padding:8px 4px;text-align:center;font-weight:700;color:#22c55e;border-right:1px solid #ddd;">9.00</td><td style="padding:8px 4px;text-align:center;font-weight:700;color:#22c55e;border-right:1px solid #ddd;">9.00</td><td style="padding:8px 4px;text-align:center;font-weight:700;color:#ef4444;border-right:1px solid #ddd;">11.80</td><td style="padding:8px 4px;text-align:center;color:#999;border-right:1px solid #ddd;">-</td><td style="padding:8px 4px;text-align:center;color:#999;border-right:1px solid #ddd;">-</td><td style="padding:8px 4px;text-align:center;color:#999;border-right:1px solid #ddd;">-</td><td style="padding:8px 4px;text-align:center;color:#999;border-right:1px solid #ddd;">-</td><td style="padding:8px 4px;text-align:center;color:#999;border-right:1px solid #ddd;">-</td><td style="padding:8px 4px;text-align:center;color:#999;border-right:1px solid #ddd;">-</td><td style="padding:8px 4px;text-align:center;color:#999;border-right:1px solid var(--color-border);">-</td>
+                <td style="padding:8px 4px;text-align:center;font-weight:700;color:#22c55e;font-size:14px;border-right:1px solid var(--color-border);">29.80</td><td></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <div style="display:flex;gap:20px;margin-top:12px;font-size:12px;">
+          <div style="display:flex;align-items:center;gap:6px;"><span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:#bbb;"></span><span style="color:#666;">계획 (MM)</span></div>
+          <div style="display:flex;align-items:center;gap:6px;"><span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:#22c55e;"></span><span style="color:#666;">실적 일치</span></div>
+          <div style="display:flex;align-items:center;gap:6px;"><span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:#ef4444;"></span><span style="color:#666;">실적 차이 발생</span></div>
+          <div style="display:flex;align-items:center;gap:6px;"><span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:#5a6375;"></span><span style="color:#666;">미집행</span></div>
+        </div>
+      </div>
+
+      <!-- 월별 비용 계획/현황 -->
+      <div class="section-card" style="animation-delay:0.2s;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+          <div class="section-title" style="margin-bottom:0;">월별 비용 계획 / 현황</div>
+          <span style="font-size:12px;color:#999;">단위: 만원</span>
+        </div>
+        <div style="overflow-x:auto;border-radius:12px;border:1px solid var(--color-border);">
+          <table style="width:100%;border-collapse:collapse;font-size:12px;min-width:900px;">
+            <colgroup>
+              <col style="width:80px;"><col style="width:60px;"><col style="width:60px;"><col style="width:100px;">
+              <col style="width:60px;" span="10"><col style="width:80px;"><col style="width:64px;">
+            </colgroup>
+            <thead>
+              <tr>
+                <th rowspan="2" style="background:#f3f3f3;color:#555;font-weight:600;padding:10px 8px;text-align:center;border-bottom:1px solid var(--color-border);border-right:1px solid var(--color-border);">조직</th>
+                <th rowspan="2" style="background:#f3f3f3;color:#555;font-weight:600;padding:10px 8px;text-align:center;border-bottom:1px solid var(--color-border);border-right:1px solid var(--color-border);">소속</th>
+                <th rowspan="2" style="background:#f3f3f3;color:#555;font-weight:600;padding:10px 8px;text-align:center;border-bottom:1px solid var(--color-border);border-right:1px solid var(--color-border);">등급</th>
+                <th rowspan="2" style="background:#f3f3f3;color:#555;font-weight:600;padding:10px 8px;text-align:center;border-bottom:1px solid var(--color-border);border-right:1px solid var(--color-border);">역할</th>
+                <th colspan="10" style="background:#e5f3f7;color:#2a8faa;font-weight:700;padding:8px;text-align:center;border-bottom:1px solid var(--color-border);border-right:1px solid var(--color-border);">2026 (만원)</th>
+                <th rowspan="2" style="background:#4db5d5;color:#fff;font-weight:bold;padding:10px 8px;text-align:center;border-bottom:1px solid var(--color-border);border-right:1px solid var(--color-border);">합계(만원)</th>
+                <th rowspan="2" style="background:#f3f3f3;color:#555;font-weight:600;padding:10px 8px;text-align:center;border-bottom:1px solid var(--color-border);">비고</th>
+              </tr>
+              <tr>
+                <th style="background:#4db5d5;color:#fff;font-weight:600;padding:8px 4px;text-align:center;border-bottom:1px solid #3aa0be;border-right:1px solid #c8c8c8;">01</th>
+                <th style="background:#4db5d5;color:#fff;font-weight:600;padding:8px 4px;text-align:center;border-bottom:1px solid #3aa0be;border-right:1px solid #c8c8c8;">02</th>
+                <th style="background:#4db5d5;color:#fff;font-weight:600;padding:8px 4px;text-align:center;border-bottom:1px solid #3aa0be;border-right:1px solid #c8c8c8;">03</th>
+                <th style="background:#4db5d5;color:#fff;font-weight:600;padding:8px 4px;text-align:center;border-bottom:1px solid #3aa0be;border-right:1px solid #c8c8c8;">04</th>
+                <th style="background:#4db5d5;color:#fff;font-weight:600;padding:8px 4px;text-align:center;border-bottom:1px solid #3aa0be;border-right:1px solid #c8c8c8;">05</th>
+                <th style="background:#4db5d5;color:#fff;font-weight:600;padding:8px 4px;text-align:center;border-bottom:1px solid #3aa0be;border-right:1px solid #c8c8c8;">06</th>
+                <th style="background:#4db5d5;color:#fff;font-weight:600;padding:8px 4px;text-align:center;border-bottom:1px solid #3aa0be;border-right:1px solid #c8c8c8;">07</th>
+                <th style="background:#4db5d5;color:#fff;font-weight:600;padding:8px 4px;text-align:center;border-bottom:1px solid #3aa0be;border-right:1px solid #c8c8c8;">08</th>
+                <th style="background:#4db5d5;color:#fff;font-weight:600;padding:8px 4px;text-align:center;border-bottom:1px solid #3aa0be;border-right:1px solid #c8c8c8;">09</th>
+                <th style="background:#4db5d5;color:#fff;font-weight:600;padding:8px 4px;text-align:center;border-bottom:1px solid #3aa0be;border-right:1px solid #c8c8c8;">10</th>
+              </tr>
+            </thead>
+            <tbody>
+              <!-- 특급 PM/PL -->
+              <tr style="border-bottom:1px solid #ddd;">
+                <td rowspan="2" style="padding:8px;text-align:center;color:#333;border-right:1px solid var(--color-border);background:#f3f3f3;font-weight:500;">SI사업 2팀</td>
+                <td rowspan="2" style="padding:8px;text-align:center;color:#666;border-right:1px solid var(--color-border);">당사</td>
+                <td rowspan="2" style="padding:8px;text-align:center;border-right:1px solid var(--color-border);"><span style="background:#e5f3f7;color:#2a8faa;padding:1px 5px;border-radius:2px;font-weight:bold;font-size:11px;">특급</span></td>
+                <td rowspan="2" style="padding:8px;text-align:center;color:#333;border-right:1px solid var(--color-border);">PM/PL</td>
+                <td style="padding:6px;text-align:right;color:#333;font-weight:normal;border-right:1px solid #ddd;">900</td><td style="padding:6px;text-align:right;color:#333;font-weight:normal;border-right:1px solid #ddd;">900</td><td style="padding:6px;text-align:right;color:#333;font-weight:normal;border-right:1px solid #ddd;">900</td><td style="padding:6px;text-align:right;color:#333;font-weight:normal;border-right:1px solid #ddd;">900</td><td style="padding:6px;text-align:right;color:#333;font-weight:normal;border-right:1px solid #ddd;">900</td><td style="padding:6px;text-align:right;color:#333;font-weight:normal;border-right:1px solid #ddd;">900</td><td style="padding:6px;text-align:right;color:#333;font-weight:normal;border-right:1px solid #ddd;">900</td><td style="padding:6px;text-align:right;color:#333;font-weight:normal;border-right:1px solid #ddd;">900</td><td style="padding:6px;text-align:right;color:#333;font-weight:normal;border-right:1px solid #ddd;">900</td><td style="padding:6px;text-align:right;color:#333;font-weight:normal;border-right:1px solid var(--color-border);">900</td>
+                <td style="padding:6px 8px;text-align:right;font-weight:700;color:#f59e0b;border-right:1px solid var(--color-border);">9,000</td><td style="padding:6px 4px;text-align:center;color:#999;font-size:11px;">계획</td>
+              </tr>
+              <tr style="border-bottom:1px solid var(--color-border);background:#fafafa;">
+                <td style="padding:6px;text-align:right;color:#28a745;font-weight:normal;border-right:1px solid #ddd;">920</td><td style="padding:6px;text-align:right;color:#28a745;font-weight:normal;border-right:1px solid #ddd;">920</td><td style="padding:6px;text-align:right;color:#d9534f;font-weight:normal;border-right:1px solid #ddd;">736</td><td style="padding:6px;text-align:center;color:#999;border-right:1px solid #ddd;">-</td><td style="padding:6px;text-align:center;color:#999;border-right:1px solid #ddd;">-</td><td style="padding:6px;text-align:center;color:#999;border-right:1px solid #ddd;">-</td><td style="padding:6px;text-align:center;color:#999;border-right:1px solid #ddd;">-</td><td style="padding:6px;text-align:center;color:#999;border-right:1px solid #ddd;">-</td><td style="padding:6px;text-align:center;color:#999;border-right:1px solid #ddd;">-</td><td style="padding:6px;text-align:center;color:#999;border-right:1px solid var(--color-border);">-</td>
+                <td style="padding:6px 8px;text-align:right;font-weight:700;color:#22c55e;border-right:1px solid var(--color-border);">2,576</td><td style="padding:6px 4px;text-align:center;color:#999;font-size:11px;">실적</td>
+              </tr>
+              <!-- 고급 사업관리 -->
+              <tr style="border-bottom:1px solid #ddd;">
+                <td rowspan="2" style="padding:8px;text-align:center;color:#333;border-right:1px solid var(--color-border);background:#f3f3f3;font-weight:500;">SI사업 2팀</td>
+                <td rowspan="2" style="padding:8px;text-align:center;color:#666;border-right:1px solid var(--color-border);">당사</td>
+                <td rowspan="2" style="padding:8px;text-align:center;border-right:1px solid var(--color-border);"><span style="background:#f0ebfa;color:#7c5cbf;padding:1px 5px;border-radius:2px;font-weight:bold;font-size:11px;">고급</span></td>
+                <td rowspan="2" style="padding:8px;text-align:center;color:#333;border-right:1px solid var(--color-border);">사업관리</td>
+                <td style="padding:6px;text-align:right;color:#333;font-weight:normal;border-right:1px solid #ddd;">750</td><td style="padding:6px;text-align:right;color:#333;font-weight:normal;border-right:1px solid #ddd;">750</td><td style="padding:6px;text-align:right;color:#333;font-weight:normal;border-right:1px solid #ddd;">750</td><td style="padding:6px;text-align:right;color:#333;font-weight:normal;border-right:1px solid #ddd;">750</td><td style="padding:6px;text-align:right;color:#333;font-weight:normal;border-right:1px solid #ddd;">750</td><td style="padding:6px;text-align:right;color:#333;font-weight:normal;border-right:1px solid #ddd;">750</td><td style="padding:6px;text-align:right;color:#333;font-weight:normal;border-right:1px solid #ddd;">750</td><td style="padding:6px;text-align:right;color:#333;font-weight:normal;border-right:1px solid #ddd;">750</td><td style="padding:6px;text-align:right;color:#333;font-weight:normal;border-right:1px solid #ddd;">750</td><td style="padding:6px;text-align:right;color:#333;font-weight:normal;border-right:1px solid var(--color-border);">750</td>
+                <td style="padding:6px 8px;text-align:right;font-weight:700;color:#f59e0b;border-right:1px solid var(--color-border);">7,500</td><td style="padding:6px 4px;text-align:center;color:#999;font-size:11px;">계획</td>
+              </tr>
+              <tr style="border-bottom:1px solid var(--color-border);background:#fafafa;">
+                <td style="padding:6px;text-align:right;color:#28a745;font-weight:normal;border-right:1px solid #ddd;">780</td><td style="padding:6px;text-align:right;color:#28a745;font-weight:normal;border-right:1px solid #ddd;">780</td><td style="padding:6px;text-align:right;color:#28a745;font-weight:normal;border-right:1px solid #ddd;">780</td><td style="padding:6px;text-align:center;color:#999;border-right:1px solid #ddd;">-</td><td style="padding:6px;text-align:center;color:#999;border-right:1px solid #ddd;">-</td><td style="padding:6px;text-align:center;color:#999;border-right:1px solid #ddd;">-</td><td style="padding:6px;text-align:center;color:#999;border-right:1px solid #ddd;">-</td><td style="padding:6px;text-align:center;color:#999;border-right:1px solid #ddd;">-</td><td style="padding:6px;text-align:center;color:#999;border-right:1px solid #ddd;">-</td><td style="padding:6px;text-align:center;color:#999;border-right:1px solid var(--color-border);">-</td>
+                <td style="padding:6px 8px;text-align:right;font-weight:700;color:#22c55e;border-right:1px solid var(--color-border);">2,340</td><td style="padding:6px 4px;text-align:center;color:#999;font-size:11px;">실적</td>
+              </tr>
+              <!-- 고급 업무분석/설계 -->
+              <tr style="border-bottom:1px solid #ddd;">
+                <td rowspan="2" style="padding:8px;text-align:center;color:#333;border-right:1px solid var(--color-border);background:#f3f3f3;font-weight:500;">SI사업 2팀</td>
+                <td rowspan="2" style="padding:8px;text-align:center;color:#666;border-right:1px solid var(--color-border);">외주</td>
+                <td rowspan="2" style="padding:8px;text-align:center;border-right:1px solid var(--color-border);"><span style="background:#f0ebfa;color:#7c5cbf;padding:1px 5px;border-radius:2px;font-weight:bold;font-size:11px;">고급</span></td>
+                <td rowspan="2" style="padding:8px;text-align:center;color:#333;border-right:1px solid var(--color-border);">업무분석/설계</td>
+                <td style="padding:6px;text-align:right;color:#333;font-weight:normal;border-right:1px solid #ddd;">2,250</td><td style="padding:6px;text-align:right;color:#333;font-weight:normal;border-right:1px solid #ddd;">2,250</td><td style="padding:6px;text-align:right;color:#333;font-weight:normal;border-right:1px solid #ddd;">2,250</td><td style="padding:6px;text-align:right;color:#333;font-weight:normal;border-right:1px solid #ddd;">2,250</td><td style="padding:6px;text-align:right;color:#333;font-weight:normal;border-right:1px solid #ddd;">2,250</td><td style="padding:6px;text-align:right;color:#333;font-weight:normal;border-right:1px solid #ddd;">2,250</td><td style="padding:6px;text-align:right;color:#333;font-weight:normal;border-right:1px solid #ddd;">2,250</td><td style="padding:6px;text-align:right;color:#333;font-weight:normal;border-right:1px solid #ddd;">1,500</td><td style="padding:6px;text-align:right;color:#333;font-weight:normal;border-right:1px solid #ddd;">1,500</td><td style="padding:6px;text-align:right;color:#333;font-weight:normal;border-right:1px solid var(--color-border);">1,500</td>
+                <td style="padding:6px 8px;text-align:right;font-weight:700;color:#f59e0b;border-right:1px solid var(--color-border);">21,000</td><td style="padding:6px 4px;text-align:center;color:#999;font-size:11px;">계획</td>
+              </tr>
+              <tr style="border-bottom:1px solid var(--color-border);background:#fafafa;">
+                <td style="padding:6px;text-align:right;color:#28a745;font-weight:normal;border-right:1px solid #ddd;">2,340</td><td style="padding:6px;text-align:right;color:#28a745;font-weight:normal;border-right:1px solid #ddd;">2,340</td><td style="padding:6px;text-align:right;color:#d9534f;font-weight:normal;border-right:1px solid #ddd;">1,950</td><td style="padding:6px;text-align:center;color:#999;border-right:1px solid #ddd;">-</td><td style="padding:6px;text-align:center;color:#999;border-right:1px solid #ddd;">-</td><td style="padding:6px;text-align:center;color:#999;border-right:1px solid #ddd;">-</td><td style="padding:6px;text-align:center;color:#999;border-right:1px solid #ddd;">-</td><td style="padding:6px;text-align:center;color:#999;border-right:1px solid #ddd;">-</td><td style="padding:6px;text-align:center;color:#999;border-right:1px solid #ddd;">-</td><td style="padding:6px;text-align:center;color:#999;border-right:1px solid var(--color-border);">-</td>
+                <td style="padding:6px 8px;text-align:right;font-weight:700;color:#22c55e;border-right:1px solid var(--color-border);">6,630</td><td style="padding:6px 4px;text-align:center;color:#999;font-size:11px;">실적</td>
+              </tr>
+              <!-- 중급 개발 -->
+              <tr style="border-bottom:1px solid #ddd;">
+                <td rowspan="2" style="padding:8px;text-align:center;color:#333;border-right:1px solid var(--color-border);background:#f3f3f3;font-weight:500;">SI사업 2팀</td>
+                <td rowspan="2" style="padding:8px;text-align:center;color:#666;border-right:1px solid var(--color-border);">외주</td>
+                <td rowspan="2" style="padding:8px;text-align:center;border-right:1px solid var(--color-border);"><span style="background:#e9f7ec;color:#28a745;padding:1px 5px;border-radius:2px;font-weight:bold;font-size:11px;">중급</span></td>
+                <td rowspan="2" style="padding:8px;text-align:center;color:#333;border-right:1px solid var(--color-border);">개발</td>
+                <td style="padding:6px;text-align:right;color:#333;font-weight:normal;border-right:1px solid #ddd;">1,100</td><td style="padding:6px;text-align:right;color:#333;font-weight:normal;border-right:1px solid #ddd;">1,100</td><td style="padding:6px;text-align:right;color:#333;font-weight:normal;border-right:1px solid #ddd;">2,200</td><td style="padding:6px;text-align:right;color:#333;font-weight:normal;border-right:1px solid #ddd;">2,200</td><td style="padding:6px;text-align:right;color:#333;font-weight:normal;border-right:1px solid #ddd;">2,200</td><td style="padding:6px;text-align:right;color:#333;font-weight:normal;border-right:1px solid #ddd;">2,200</td><td style="padding:6px;text-align:right;color:#333;font-weight:normal;border-right:1px solid #ddd;">2,200</td><td style="padding:6px;text-align:right;color:#333;font-weight:normal;border-right:1px solid #ddd;">2,200</td><td style="padding:6px;text-align:right;color:#333;font-weight:normal;border-right:1px solid #ddd;">1,100</td><td style="padding:6px;text-align:right;color:#333;font-weight:normal;border-right:1px solid var(--color-border);">1,100</td>
+                <td style="padding:6px 8px;text-align:right;font-weight:700;color:#f59e0b;border-right:1px solid var(--color-border);">17,600</td><td style="padding:6px 4px;text-align:center;color:#999;font-size:11px;">계획</td>
+              </tr>
+              <tr style="border-bottom:1px solid var(--color-border);background:#fafafa;">
+                <td style="padding:6px;text-align:right;color:#28a745;font-weight:normal;border-right:1px solid #ddd;">1,120</td><td style="padding:6px;text-align:right;color:#28a745;font-weight:normal;border-right:1px solid #ddd;">1,120</td><td style="padding:6px;text-align:right;color:#28a745;font-weight:normal;border-right:1px solid #ddd;">2,240</td><td style="padding:6px;text-align:center;color:#999;border-right:1px solid #ddd;">-</td><td style="padding:6px;text-align:center;color:#999;border-right:1px solid #ddd;">-</td><td style="padding:6px;text-align:center;color:#999;border-right:1px solid #ddd;">-</td><td style="padding:6px;text-align:center;color:#999;border-right:1px solid #ddd;">-</td><td style="padding:6px;text-align:center;color:#999;border-right:1px solid #ddd;">-</td><td style="padding:6px;text-align:center;color:#999;border-right:1px solid #ddd;">-</td><td style="padding:6px;text-align:center;color:#999;border-right:1px solid var(--color-border);">-</td>
+                <td style="padding:6px 8px;text-align:right;font-weight:700;color:#22c55e;border-right:1px solid var(--color-border);">4,480</td><td style="padding:6px 4px;text-align:center;color:#999;font-size:11px;">실적</td>
+              </tr>
+              <!-- 초급 개발 -->
+              <tr style="border-bottom:1px solid #ddd;">
+                <td rowspan="2" style="padding:8px;text-align:center;color:#333;border-right:1px solid var(--color-border);background:#f3f3f3;font-weight:500;">SI사업 2팀</td>
+                <td rowspan="2" style="padding:8px;text-align:center;color:#666;border-right:1px solid var(--color-border);">외주</td>
+                <td rowspan="2" style="padding:8px;text-align:center;border-right:1px solid var(--color-border);"><span style="background:#fff3d6;color:#b07d00;padding:1px 5px;border-radius:2px;font-weight:bold;font-size:11px;">초급</span></td>
+                <td rowspan="2" style="padding:8px;text-align:center;color:#333;border-right:1px solid var(--color-border);">개발</td>
+                <td style="padding:6px;text-align:right;color:#333;font-weight:normal;border-right:1px solid #ddd;">800</td><td style="padding:6px;text-align:right;color:#333;font-weight:normal;border-right:1px solid #ddd;">800</td><td style="padding:6px;text-align:right;color:#333;font-weight:normal;border-right:1px solid #ddd;">1,600</td><td style="padding:6px;text-align:right;color:#333;font-weight:normal;border-right:1px solid #ddd;">1,600</td><td style="padding:6px;text-align:right;color:#333;font-weight:normal;border-right:1px solid #ddd;">1,600</td><td style="padding:6px;text-align:right;color:#333;font-weight:normal;border-right:1px solid #ddd;">1,600</td><td style="padding:6px;text-align:right;color:#333;font-weight:normal;border-right:1px solid #ddd;">1,600</td><td style="padding:6px;text-align:right;color:#333;font-weight:normal;border-right:1px solid #ddd;">1,600</td><td style="padding:6px;text-align:right;color:#333;font-weight:normal;border-right:1px solid #ddd;">800</td><td style="padding:6px;text-align:right;color:#333;font-weight:normal;border-right:1px solid var(--color-border);">800</td>
+                <td style="padding:6px 8px;text-align:right;font-weight:700;color:#f59e0b;border-right:1px solid var(--color-border);">12,800</td><td style="padding:6px 4px;text-align:center;color:#999;font-size:11px;">계획</td>
+              </tr>
+              <tr style="border-bottom:1px solid var(--color-border);background:#fafafa;">
+                <td style="padding:6px;text-align:right;color:#28a745;font-weight:normal;border-right:1px solid #ddd;">820</td><td style="padding:6px;text-align:right;color:#28a745;font-weight:normal;border-right:1px solid #ddd;">820</td><td style="padding:6px;text-align:right;color:#d9534f;font-weight:normal;border-right:1px solid #ddd;">1,435</td><td style="padding:6px;text-align:center;color:#999;border-right:1px solid #ddd;">-</td><td style="padding:6px;text-align:center;color:#999;border-right:1px solid #ddd;">-</td><td style="padding:6px;text-align:center;color:#999;border-right:1px solid #ddd;">-</td><td style="padding:6px;text-align:center;color:#999;border-right:1px solid #ddd;">-</td><td style="padding:6px;text-align:center;color:#999;border-right:1px solid #ddd;">-</td><td style="padding:6px;text-align:center;color:#999;border-right:1px solid #ddd;">-</td><td style="padding:6px;text-align:center;color:#999;border-right:1px solid var(--color-border);">-</td>
+                <td style="padding:6px 8px;text-align:right;font-weight:700;color:#22c55e;border-right:1px solid var(--color-border);">3,075</td><td style="padding:6px 4px;text-align:center;color:#999;font-size:11px;">실적</td>
+              </tr>
+              <!-- 전체 합계 -->
+              <tr style="background:#e5f3f7;">
+                <td colspan="4" style="padding:10px 8px;text-align:right;color:#2a8faa;font-weight:700;border-right:1px solid var(--color-border);font-size:13px;">전체 합계 (계획)</td>
+                <td style="padding:8px 6px;text-align:right;font-weight:700;color:#6b91ff;border-right:1px solid #ddd;">5,800</td><td style="padding:8px 6px;text-align:right;font-weight:700;color:#6b91ff;border-right:1px solid #ddd;">5,800</td><td style="padding:8px 6px;text-align:right;font-weight:700;color:#6b91ff;border-right:1px solid #ddd;">7,700</td><td style="padding:8px 6px;text-align:right;font-weight:700;color:#6b91ff;border-right:1px solid #ddd;">7,700</td><td style="padding:8px 6px;text-align:right;font-weight:700;color:#6b91ff;border-right:1px solid #ddd;">7,700</td><td style="padding:8px 6px;text-align:right;font-weight:700;color:#6b91ff;border-right:1px solid #ddd;">7,700</td><td style="padding:8px 6px;text-align:right;font-weight:700;color:#6b91ff;border-right:1px solid #ddd;">7,700</td><td style="padding:8px 6px;text-align:right;font-weight:700;color:#6b91ff;border-right:1px solid #ddd;">6,950</td><td style="padding:8px 6px;text-align:right;font-weight:700;color:#6b91ff;border-right:1px solid #ddd;">5,050</td><td style="padding:8px 6px;text-align:right;font-weight:700;color:#6b91ff;border-right:1px solid var(--color-border);">5,050</td>
+                <td style="padding:8px 8px;text-align:right;font-weight:700;color:#333;font-size:13px;border-right:1px solid var(--color-border);">67,900</td><td></td>
+              </tr>
+              <tr style="background:#eef7fa;">
+                <td colspan="4" style="padding:10px 8px;text-align:right;color:#28a745;font-weight:bold;border-right:1px solid var(--color-border);font-size:13px;">전체 합계 (실적)</td>
+                <td style="padding:8px 6px;text-align:right;font-weight:700;color:#22c55e;border-right:1px solid #ddd;">5,980</td><td style="padding:8px 6px;text-align:right;font-weight:700;color:#22c55e;border-right:1px solid #ddd;">5,980</td><td style="padding:8px 6px;text-align:right;font-weight:700;color:#ef4444;border-right:1px solid #ddd;">7,141</td><td style="padding:8px 6px;text-align:center;color:#999;border-right:1px solid #ddd;">-</td><td style="padding:8px 6px;text-align:center;color:#999;border-right:1px solid #ddd;">-</td><td style="padding:8px 6px;text-align:center;color:#999;border-right:1px solid #ddd;">-</td><td style="padding:8px 6px;text-align:center;color:#999;border-right:1px solid #ddd;">-</td><td style="padding:8px 6px;text-align:center;color:#999;border-right:1px solid #ddd;">-</td><td style="padding:8px 6px;text-align:center;color:#999;border-right:1px solid #ddd;">-</td><td style="padding:8px 6px;text-align:center;color:#999;border-right:1px solid var(--color-border);">-</td>
+                <td style="padding:8px 8px;text-align:right;font-weight:700;color:#22c55e;font-size:14px;border-right:1px solid var(--color-border);">19,101</td><td></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <!-- 단가 범례 -->
+        <div style="display:flex;gap:20px;margin-top:12px;font-size:12px;flex-wrap:wrap;align-items:center;">
+          <span style="color:#666;font-weight:600;">계획 단가</span>
+          <div style="display:flex;align-items:center;gap:6px;"><span style="background:#e5f3f7;color:#2a8faa;padding:1px 6px;border-radius:2px;font-weight:bold;font-size:11px;">특급</span><span style="color:#666;">900만원/MM</span></div>
+          <div style="display:flex;align-items:center;gap:6px;"><span style="background:#f0ebfa;color:#7c5cbf;padding:1px 6px;border-radius:2px;font-weight:bold;font-size:11px;">고급</span><span style="color:#666;">750만원/MM</span></div>
+          <div style="display:flex;align-items:center;gap:6px;"><span style="background:#e9f7ec;color:#28a745;padding:1px 6px;border-radius:2px;font-weight:bold;font-size:11px;">중급</span><span style="color:#666;">550만원/MM</span></div>
+          <div style="display:flex;align-items:center;gap:6px;"><span style="background:#fff3d6;color:#b07d00;padding:1px 6px;border-radius:2px;font-weight:bold;font-size:11px;">초급</span><span style="color:#666;">400만원/MM</span></div>
+          <div style="width:1px;height:16px;background:var(--color-border);"></div>
+          <span style="color:#666;font-weight:600;">실적 단가</span>
+          <div style="display:flex;align-items:center;gap:6px;"><span style="background:#e5f3f7;color:#2a8faa;padding:1px 6px;border-radius:2px;font-weight:bold;font-size:11px;">특급</span><span style="color:#666;">920만원/MM</span></div>
+          <div style="display:flex;align-items:center;gap:6px;"><span style="background:#f0ebfa;color:#7c5cbf;padding:1px 6px;border-radius:2px;font-weight:bold;font-size:11px;">고급</span><span style="color:#666;">780만원/MM</span></div>
+          <div style="display:flex;align-items:center;gap:6px;"><span style="background:#e9f7ec;color:#28a745;padding:1px 6px;border-radius:2px;font-weight:bold;font-size:11px;">중급</span><span style="color:#666;">560만원/MM</span></div>
+          <div style="display:flex;align-items:center;gap:6px;"><span style="background:#fff3d6;color:#b07d00;padding:1px 6px;border-radius:2px;font-weight:bold;font-size:11px;">초급</span><span style="color:#666;">410만원/MM</span></div>
+        </div>
+        <div style="margin-top:10px;padding:10px 16px;background:rgba(79,124,255,0.05);border:1px solid rgba(79,124,255,0.2);border-radius:8px;font-size:12px;color:#999;">
+          ※ 총 계획 예산: <span style="color:#333;font-weight:bold;">6억 7,900만원</span> &nbsp;|&nbsp; 실적 집행: <span style="color:#28a745;font-weight:bold;">1억 9,101만원</span> &nbsp;|&nbsp; 집행률: <span style="color:#2a8faa;font-weight:700;">28.1%</span> &nbsp;|&nbsp; 단가 차이로 인한 비용 증가: <span style="color:#d9534f;font-weight:bold;">+556만원</span>
+        </div>
+      </div>
+
+    </div><!-- /pg-content -->
+
+    </div><!-- /pg-content -->
+  </div>
+  <div id="tab-pu" class="tab-panel"></div>
+  <div id="tab-cp" class="tab-panel">
+    <div style="overflow-x:auto;">
+      <table class="grid" style="min-width:800px;font-size:11px;">
+        <colgroup>
+          <col style="width:220px;">
+          <col style="width:52px;"><col style="width:88px;">
+          <col style="width:52px;"><col style="width:88px;">
+          <col style="width:52px;"><col style="width:88px;">
+          <col style="width:52px;"><col style="width:88px;">
+        </colgroup>
+        <!-- Header -->
+        <thead>
+          <tr>
+            <th rowspan="2" style="background:#4db5d5;color:#fff;border:1px solid #c8c8c8;padding:5px 8px;text-align:center;font-weight:bold;font-size:12px;">Description</th>
+            <th colspan="2" style="background:#4db5d5;color:#fff;border:1px solid #c8c8c8;padding:4px;text-align:center;font-weight:bold;">2011</th>
+            <th colspan="2" style="background:#4db5d5;color:#fff;border:1px solid #c8c8c8;padding:4px;text-align:center;font-weight:bold;">2012</th>
+            <th colspan="2" style="background:#4db5d5;color:#fff;border:1px solid #c8c8c8;padding:4px;text-align:center;font-weight:bold;">2013</th>
+            <th colspan="2" style="background:#4db5d5;color:#fff;border:1px solid #c8c8c8;padding:4px;text-align:center;font-weight:bold;">TOTAL</th>
+          </tr>
+          <tr>
+            <th style="background:#4db5d5;color:#fff;border:1px solid #c8c8c8;padding:3px 4px;text-align:center;">MM</th>
+            <th style="background:#4db5d5;color:#fff;border:1px solid #c8c8c8;padding:3px 4px;text-align:center;">금액</th>
+            <th style="background:#4db5d5;color:#fff;border:1px solid #c8c8c8;padding:3px 4px;text-align:center;">MM</th>
+            <th style="background:#4db5d5;color:#fff;border:1px solid #c8c8c8;padding:3px 4px;text-align:center;">금액</th>
+            <th style="background:#4db5d5;color:#fff;border:1px solid #c8c8c8;padding:3px 4px;text-align:center;">MM</th>
+            <th style="background:#4db5d5;color:#fff;border:1px solid #c8c8c8;padding:3px 4px;text-align:center;">금액</th>
+            <th style="background:#4db5d5;color:#fff;border:1px solid #c8c8c8;padding:3px 4px;text-align:center;">MM</th>
+            <th style="background:#4db5d5;color:#fff;border:1px solid #c8c8c8;padding:3px 4px;text-align:center;">금액</th>
+          </tr>
+        </thead>
+        <tbody>
+          <!-- 매출 Total 섹션 헤더 -->
+          <tr>
+            <td style="background:#f3f3f3;font-weight:bold;color:#222;border:1px solid #c8c8c8;padding:3px 8px;">&#9658; 매출 Total</td>
+            <td style="background:#f3f3f3;border:1px solid #c8c8c8;"></td>
+            <td style="background:#f3f3f3;border:1px solid #c8c8c8;"></td>
+            <td style="background:#f3f3f3;border:1px solid #c8c8c8;"></td>
+            <td style="background:#f3f3f3;border:1px solid #c8c8c8;"></td>
+            <td style="background:#f3f3f3;border:1px solid #c8c8c8;"></td>
+            <td style="background:#f3f3f3;border:1px solid #c8c8c8;"></td>
+            <td style="background:#f3f3f3;border:1px solid #c8c8c8;"></td>
+            <td style="background:#f3f3f3;border:1px solid #c8c8c8;"></td>
+          </tr>
+          <!-- 인건비 -->
+          <tr>
+            <td style="background:#fff;border:1px solid #c8c8c8;padding:3px 8px 3px 20px;">- 인건비</td>
+            <td style="background:#fff;border:1px solid #c8c8c8;text-align:right;padding:3px 6px;"></td>
+            <td style="background:#fff;border:1px solid #c8c8c8;text-align:right;padding:3px 6px;">1,451,523</td>
+            <td style="background:#fff;border:1px solid #c8c8c8;text-align:right;padding:3px 6px;"></td>
+            <td style="background:#fff;border:1px solid #c8c8c8;text-align:right;padding:3px 6px;">3,713,465</td>
+            <td style="background:#fff;border:1px solid #c8c8c8;text-align:right;padding:3px 6px;"></td>
+            <td style="background:#fff;border:1px solid #c8c8c8;text-align:right;padding:3px 6px;">395,879</td>
+            <td style="background:#fff;border:1px solid #c8c8c8;text-align:right;padding:3px 6px;"></td>
+            <td style="background:#fff;border:1px solid #c8c8c8;text-align:right;padding:3px 6px;">5,560,867</td>
+          </tr>
+          <!-- 당사 솔루션 매출 -->
+          <tr>
+            <td style="background:#fff;border:1px solid #c8c8c8;padding:3px 8px 3px 20px;">- 당사 솔루션 매출</td>
+            <td style="background:#fff;border:1px solid #c8c8c8;text-align:right;padding:3px 6px;"></td>
+            <td style="background:#fff;border:1px solid #c8c8c8;text-align:right;padding:3px 6px;">0</td>
+            <td style="background:#fff;border:1px solid #c8c8c8;"></td>
+            <td style="background:#fff;border:1px solid #c8c8c8;"></td>
+            <td style="background:#fff;border:1px solid #c8c8c8;"></td>
+            <td style="background:#fff;border:1px solid #c8c8c8;"></td>
+            <td style="background:#fff;border:1px solid #c8c8c8;text-align:right;padding:3px 6px;"></td>
+            <td style="background:#fff;border:1px solid #c8c8c8;text-align:right;padding:3px 6px;">0</td>
+          </tr>
+          <!-- H/W & S/W 매출 -->
+          <tr>
+            <td style="background:#fff;border:1px solid #c8c8c8;padding:3px 8px 3px 20px;">- H/W &amp; S/W 매출</td>
+            <td style="background:#fff;border:1px solid #c8c8c8;"></td>
+            <td style="background:#fff;border:1px solid #c8c8c8;text-align:right;padding:3px 6px;">0</td>
+            <td style="background:#fff;border:1px solid #c8c8c8;"></td>
+            <td style="background:#fff;border:1px solid #c8c8c8;"></td>
+            <td style="background:#fff;border:1px solid #c8c8c8;"></td>
+            <td style="background:#fff;border:1px solid #c8c8c8;"></td>
+            <td style="background:#fff;border:1px solid #c8c8c8;"></td>
+            <td style="background:#fff;border:1px solid #c8c8c8;text-align:right;padding:3px 6px;">0</td>
+          </tr>
+          <!-- 총 매출 합계 -->
+          <tr>
+            <td style="background:#e5f3f7;font-weight:bold;border:1px solid #c8c8c8;padding:3px 8px;">총 매출 (VAT제외)</td>
+            <td style="background:#e5f3f7;font-weight:bold;border:1px solid #c8c8c8;"></td>
+            <td style="background:#e5f3f7;font-weight:bold;border:1px solid #c8c8c8;text-align:right;padding:3px 6px;">1,451,523</td>
+            <td style="background:#e5f3f7;font-weight:bold;border:1px solid #c8c8c8;"></td>
+            <td style="background:#e5f3f7;font-weight:bold;border:1px solid #c8c8c8;text-align:right;padding:3px 6px;">3,713,465</td>
+            <td style="background:#e5f3f7;font-weight:bold;border:1px solid #c8c8c8;"></td>
+            <td style="background:#e5f3f7;font-weight:bold;border:1px solid #c8c8c8;text-align:right;padding:3px 6px;">395,879</td>
+            <td style="background:#e5f3f7;font-weight:bold;border:1px solid #c8c8c8;"></td>
+            <td style="background:#e5f3f7;font-weight:bold;border:1px solid #c8c8c8;text-align:right;padding:3px 6px;">5,560,867</td>
+          </tr>
+
+          <!-- 비용 섹션 헤더 -->
+          <tr>
+            <td style="background:#f3f3f3;font-weight:bold;color:#222;border:1px solid #c8c8c8;padding:3px 8px;">&#9658; 비용</td>
+            <td style="background:#f3f3f3;border:1px solid #c8c8c8;"></td>
+            <td style="background:#f3f3f3;border:1px solid #c8c8c8;"></td>
+            <td style="background:#f3f3f3;border:1px solid #c8c8c8;"></td>
+            <td style="background:#f3f3f3;border:1px solid #c8c8c8;"></td>
+            <td style="background:#f3f3f3;border:1px solid #c8c8c8;"></td>
+            <td style="background:#f3f3f3;border:1px solid #c8c8c8;"></td>
+            <td style="background:#f3f3f3;border:1px solid #c8c8c8;"></td>
+            <td style="background:#f3f3f3;border:1px solid #c8c8c8;"></td>
+          </tr>
+          <!-- 인건비 - 인스웨이브 -->
+          <tr>
+            <td style="background:#fff;border:1px solid #c8c8c8;padding:3px 8px 3px 20px;">- 인건비 - 인스웨이브</td>
+            <td style="background:#fff;border:1px solid #c8c8c8;text-align:right;padding:3px 6px;">33.0</td>
+            <td style="background:#fff;border:1px solid #c8c8c8;text-align:right;padding:3px 6px;">180,333</td>
+            <td style="background:#fff;border:1px solid #c8c8c8;text-align:right;padding:3px 6px;">36.0</td>
+            <td style="background:#fff;border:1px solid #c8c8c8;text-align:right;padding:3px 6px;">204,175</td>
+            <td style="background:#fff;border:1px solid #c8c8c8;text-align:right;padding:3px 6px;">8.0</td>
+            <td style="background:#fff;border:1px solid #c8c8c8;text-align:right;padding:3px 6px;">47,369</td>
+            <td style="background:#fff;border:1px solid #c8c8c8;text-align:right;padding:3px 6px;">77</td>
+            <td style="background:#fff;border:1px solid #c8c8c8;text-align:right;padding:3px 6px;">431,878</td>
+          </tr>
+          <!-- 인건비 - 외주 -->
+          <tr>
+            <td style="background:#fff;border:1px solid #c8c8c8;padding:3px 8px 3px 20px;">- 인건비 - 외주</td>
+            <td style="background:#fff;border:1px solid #c8c8c8;text-align:right;padding:3px 6px;">220.3</td>
+            <td style="background:#fff;border:1px solid #c8c8c8;text-align:right;padding:3px 6px;">1,160,548</td>
+            <td style="background:#fff;border:1px solid #c8c8c8;text-align:right;padding:3px 6px;">672.0</td>
+            <td style="background:#fff;border:1px solid #c8c8c8;text-align:right;padding:3px 6px;">3,274,034</td>
+            <td style="background:#fff;border:1px solid #c8c8c8;text-align:right;padding:3px 6px;">66.3</td>
+            <td style="background:#fff;border:1px solid #c8c8c8;text-align:right;padding:3px 6px;">321,694</td>
+            <td style="background:#fff;border:1px solid #c8c8c8;text-align:right;padding:3px 6px;">959</td>
+            <td style="background:#fff;border:1px solid #c8c8c8;text-align:right;padding:3px 6px;">4,756,277</td>
+          </tr>
+          <!-- 제 경비 -->
+          <tr>
+            <td style="background:#fff;border:1px solid #c8c8c8;padding:3px 8px 3px 20px;">- 제 경비</td>
+            <td style="background:#fff;border:1px solid #c8c8c8;"></td>
+            <td style="background:#fff;border:1px solid #c8c8c8;text-align:right;padding:3px 6px;">25,500</td>
+            <td style="background:#fff;border:1px solid #c8c8c8;"></td>
+            <td style="background:#fff;border:1px solid #c8c8c8;text-align:right;padding:3px 6px;">22,000</td>
+            <td style="background:#fff;border:1px solid #c8c8c8;"></td>
+            <td style="background:#fff;border:1px solid #c8c8c8;text-align:right;padding:3px 6px;">5,500</td>
+            <td style="background:#fff;border:1px solid #c8c8c8;text-align:right;padding:3px 6px;">0</td>
+            <td style="background:#fff;border:1px solid #c8c8c8;text-align:right;padding:3px 6px;">53,000</td>
+          </tr>
+          <!-- H/W & S/W 매입 -->
+          <tr>
+            <td style="background:#fff;border:1px solid #c8c8c8;padding:3px 8px 3px 20px;">- H/W &amp; S/W 매입</td>
+            <td style="background:#fff;border:1px solid #c8c8c8;"></td>
+            <td style="background:#fff;border:1px solid #c8c8c8;text-align:right;padding:3px 6px;">0</td>
+            <td style="background:#fff;border:1px solid #c8c8c8;"></td>
+            <td style="background:#fff;border:1px solid #c8c8c8;"></td>
+            <td style="background:#fff;border:1px solid #c8c8c8;"></td>
+            <td style="background:#fff;border:1px solid #c8c8c8;"></td>
+            <td style="background:#fff;border:1px solid #c8c8c8;text-align:right;padding:3px 6px;">0</td>
+            <td style="background:#fff;border:1px solid #c8c8c8;text-align:right;padding:3px 6px;">0</td>
+          </tr>
+          <!-- 매출원가 합계 -->
+          <tr>
+            <td style="background:#e5f3f7;font-weight:bold;border:1px solid #c8c8c8;padding:3px 8px;">매출원가 합계</td>
+            <td style="background:#e5f3f7;font-weight:bold;border:1px solid #c8c8c8;text-align:right;padding:3px 6px;">253.3</td>
+            <td style="background:#e5f3f7;font-weight:bold;border:1px solid #c8c8c8;text-align:right;padding:3px 6px;">1,366,381</td>
+            <td style="background:#e5f3f7;font-weight:bold;border:1px solid #c8c8c8;text-align:right;padding:3px 6px;">708.0</td>
+            <td style="background:#e5f3f7;font-weight:bold;border:1px solid #c8c8c8;text-align:right;padding:3px 6px;">3,500,210</td>
+            <td style="background:#e5f3f7;font-weight:bold;border:1px solid #c8c8c8;text-align:right;padding:3px 6px;">74.3</td>
+            <td style="background:#e5f3f7;font-weight:bold;border:1px solid #c8c8c8;text-align:right;padding:3px 6px;">374,563</td>
+            <td style="background:#e5f3f7;font-weight:bold;border:1px solid #c8c8c8;text-align:right;padding:3px 6px;">1,035.6</td>
+            <td style="background:#e5f3f7;font-weight:bold;border:1px solid #c8c8c8;text-align:right;padding:3px 6px;">5,241,154</td>
+          </tr>
+          <!-- 매출이익 -->
+          <tr>
+            <td style="background:#fff;border:1px solid #c8c8c8;padding:3px 8px;">매출이익</td>
+            <td style="background:#fff;border:1px solid #c8c8c8;"></td>
+            <td style="background:#fff;border:1px solid #c8c8c8;text-align:right;padding:3px 6px;">85,142</td>
+            <td style="background:#fff;border:1px solid #c8c8c8;"></td>
+            <td style="background:#fff;border:1px solid #c8c8c8;text-align:right;padding:3px 6px;">213,255</td>
+            <td style="background:#fff;border:1px solid #c8c8c8;"></td>
+            <td style="background:#fff;border:1px solid #c8c8c8;text-align:right;padding:3px 6px;">21,316</td>
+            <td style="background:#fff;border:1px solid #c8c8c8;"></td>
+            <td style="background:#fff;border:1px solid #c8c8c8;text-align:right;padding:3px 6px;">319,713</td>
+          </tr>
+          <!-- 매출이익율 -->
+          <tr>
+            <td style="background:#e5f3f7;font-weight:bold;font-style:italic;border:1px solid #c8c8c8;padding:3px 8px;">매출이익율</td>
+            <td style="background:#e5f3f7;border:1px solid #c8c8c8;"></td>
+            <td style="background:#e5f3f7;font-weight:bold;border:1px solid #c8c8c8;text-align:right;padding:3px 6px;">5.9%</td>
+            <td style="background:#e5f3f7;border:1px solid #c8c8c8;"></td>
+            <td style="background:#e5f3f7;font-weight:bold;border:1px solid #c8c8c8;text-align:right;padding:3px 6px;">5.7%</td>
+            <td style="background:#e5f3f7;border:1px solid #c8c8c8;"></td>
+            <td style="background:#e5f3f7;font-weight:bold;border:1px solid #c8c8c8;text-align:right;padding:3px 6px;">5.4%</td>
+            <td style="background:#e5f3f7;border:1px solid #c8c8c8;"></td>
+            <td style="background:#e5f3f7;font-weight:bold;border:1px solid #c8c8c8;text-align:right;padding:3px 6px;">5.7%</td>
+          </tr>
+
+          <!-- O/H Cost 헤더 -->
+          <tr>
+            <td style="background:#fff;font-weight:bold;border:1px solid #c8c8c8;padding:3px 8px;">&#9658; O/H Cost (매출액 15.69%)</td>
+            <td style="background:#fff;border:1px solid #c8c8c8;"></td>
+            <td style="background:#fff;border:1px solid #c8c8c8;text-align:right;padding:3px 6px;">228,905</td>
+            <td style="background:#fff;border:1px solid #c8c8c8;"></td>
+            <td style="background:#fff;border:1px solid #c8c8c8;text-align:right;padding:3px 6px;">585,613</td>
+            <td style="background:#fff;border:1px solid #c8c8c8;"></td>
+            <td style="background:#fff;border:1px solid #c8c8c8;text-align:right;padding:3px 6px;">62,430</td>
+            <td style="background:#fff;border:1px solid #c8c8c8;"></td>
+            <td style="background:#fff;border:1px solid #c8c8c8;text-align:right;padding:3px 6px;">876,949</td>
+          </tr>
+          <!-- 영업 직접 O/H -->
+          <tr>
+            <td style="background:#fff;border:1px solid #c8c8c8;padding:3px 8px 3px 20px;">- 영업 직접 O/H: 매출액 3.91%</td>
+            <td style="background:#fff;border:1px solid #c8c8c8;"></td>
+            <td style="background:#fff;border:1px solid #c8c8c8;text-align:right;padding:3px 6px;">42,384</td>
+            <td style="background:#fff;border:1px solid #c8c8c8;"></td>
+            <td style="background:#fff;border:1px solid #c8c8c8;text-align:right;padding:3px 6px;">108,433</td>
+            <td style="background:#fff;border:1px solid #c8c8c8;"></td>
+            <td style="background:#fff;border:1px solid #c8c8c8;text-align:right;padding:3px 6px;">11,560</td>
+            <td style="background:#fff;border:1px solid #c8c8c8;"></td>
+            <td style="background:#fff;border:1px solid #c8c8c8;text-align:right;padding:3px 6px;">162,377</td>
+          </tr>
+          <!-- 경영지원 O/H -->
+          <tr>
+            <td style="background:#fff;border:1px solid #c8c8c8;padding:3px 8px 3px 20px;">- 경영지원O/H: 매출액 3.5%</td>
+            <td style="background:#fff;border:1px solid #c8c8c8;"></td>
+            <td style="background:#fff;border:1px solid #c8c8c8;text-align:right;padding:3px 6px;">84,334</td>
+            <td style="background:#fff;border:1px solid #c8c8c8;"></td>
+            <td style="background:#fff;border:1px solid #c8c8c8;text-align:right;padding:3px 6px;">215,752</td>
+            <td style="background:#fff;border:1px solid #c8c8c8;"></td>
+            <td style="background:#fff;border:1px solid #c8c8c8;text-align:right;padding:3px 6px;">23,001</td>
+            <td style="background:#fff;border:1px solid #c8c8c8;"></td>
+            <td style="background:#fff;border:1px solid #c8c8c8;text-align:right;padding:3px 6px;">323,086</td>
+          </tr>
+          <!-- 고정비 O/H -->
+          <tr>
+            <td style="background:#fff;border:1px solid #c8c8c8;padding:3px 8px 3px 20px;">- 고정비 O/H: 매출액 3.88%</td>
+            <td style="background:#fff;border:1px solid #c8c8c8;"></td>
+            <td style="background:#fff;border:1px solid #c8c8c8;text-align:right;padding:3px 6px;">54,287</td>
+            <td style="background:#fff;border:1px solid #c8c8c8;"></td>
+            <td style="background:#fff;border:1px solid #c8c8c8;text-align:right;padding:3px 6px;">138,884</td>
+            <td style="background:#fff;border:1px solid #c8c8c8;"></td>
+            <td style="background:#fff;border:1px solid #c8c8c8;text-align:right;padding:3px 6px;">14,806</td>
+            <td style="background:#fff;border:1px solid #c8c8c8;"></td>
+            <td style="background:#fff;border:1px solid #c8c8c8;text-align:right;padding:3px 6px;">207,976</td>
+          </tr>
+          <!-- 사업비 -->
+          <tr>
+            <td style="background:#fff;border:1px solid #c8c8c8;padding:3px 8px 3px 20px;">- 사업비: 매출액 4.39%</td>
+            <td style="background:#fff;border:1px solid #c8c8c8;"></td>
+            <td style="background:#fff;border:1px solid #c8c8c8;text-align:right;padding:3px 6px;">47,900</td>
+            <td style="background:#fff;border:1px solid #c8c8c8;"></td>
+            <td style="background:#fff;border:1px solid #c8c8c8;text-align:right;padding:3px 6px;">122,544</td>
+            <td style="background:#fff;border:1px solid #c8c8c8;"></td>
+            <td style="background:#fff;border:1px solid #c8c8c8;text-align:right;padding:3px 6px;">13,064</td>
+            <td style="background:#fff;border:1px solid #c8c8c8;"></td>
+            <td style="background:#fff;border:1px solid #c8c8c8;text-align:right;padding:3px 6px;">183,509</td>
+          </tr>
+
+          <!-- H/W, S/W O/H 헤더 -->
+          <tr>
+            <td style="background:#fff;font-weight:bold;border:1px solid #c8c8c8;padding:3px 8px;">&#9658; H/W,S/W O/H (매출액 5.0%)</td>
+            <td style="background:#fff;border:1px solid #c8c8c8;"></td>
+            <td style="background:#fff;border:1px solid #c8c8c8;text-align:right;padding:3px 6px;">0</td>
+            <td style="background:#fff;border:1px solid #c8c8c8;"></td>
+            <td style="background:#fff;border:1px solid #c8c8c8;text-align:right;padding:3px 6px;">0</td>
+            <td style="background:#fff;border:1px solid #c8c8c8;"></td>
+            <td style="background:#fff;border:1px solid #c8c8c8;text-align:right;padding:3px 6px;">0</td>
+            <td style="background:#fff;border:1px solid #c8c8c8;"></td>
+            <td style="background:#fff;border:1px solid #c8c8c8;text-align:right;padding:3px 6px;">0</td>
+          </tr>
+          <!-- 영업,경영 O/H -->
+          <tr>
+            <td style="background:#fff;border:1px solid #c8c8c8;padding:3px 8px 3px 20px;">- 영업,경영 O/H: 매출액 5.0%</td>
+            <td style="background:#fff;border:1px solid #c8c8c8;"></td>
+            <td style="background:#fff;border:1px solid #c8c8c8;text-align:right;padding:3px 6px;">0</td>
+            <td style="background:#fff;border:1px solid #c8c8c8;"></td>
+            <td style="background:#fff;border:1px solid #c8c8c8;text-align:right;padding:3px 6px;">0</td>
+            <td style="background:#fff;border:1px solid #c8c8c8;"></td>
+            <td style="background:#fff;border:1px solid #c8c8c8;text-align:right;padding:3px 6px;">0</td>
+            <td style="background:#fff;border:1px solid #c8c8c8;"></td>
+            <td style="background:#fff;border:1px solid #c8c8c8;text-align:right;padding:3px 6px;">0</td>
+          </tr>
+
+          <!-- R&D O/H -->
+          <tr>
+            <td style="background:#fff;font-weight:bold;border:1px solid #c8c8c8;padding:3px 8px;">&#9658; R&amp;D O/H (당사솔루션 50%)</td>
+            <td style="background:#fff;border:1px solid #c8c8c8;"></td>
+            <td style="background:#fff;border:1px solid #c8c8c8;text-align:right;padding:3px 6px;">0</td>
+            <td style="background:#fff;border:1px solid #c8c8c8;"></td>
+            <td style="background:#fff;border:1px solid #c8c8c8;text-align:right;padding:3px 6px;">0</td>
+            <td style="background:#fff;border:1px solid #c8c8c8;"></td>
+            <td style="background:#fff;border:1px solid #c8c8c8;text-align:right;padding:3px 6px;">0</td>
+            <td style="background:#fff;border:1px solid #c8c8c8;"></td>
+            <td style="background:#fff;border:1px solid #c8c8c8;text-align:right;padding:3px 6px;">0</td>
+          </tr>
+
+          <!-- 영업이익 -->
+          <tr>
+            <td style="background:#fff;border:1px solid #c8c8c8;padding:3px 8px;">영업이익</td>
+            <td style="background:#fff;border:1px solid #c8c8c8;"></td>
+            <td style="background:#fff;border:1px solid #c8c8c8;text-align:right;padding:3px 6px;color:#d9534f;">(143,763)</td>
+            <td style="background:#fff;border:1px solid #c8c8c8;"></td>
+            <td style="background:#fff;border:1px solid #c8c8c8;text-align:right;padding:3px 6px;color:#d9534f;">(372,358)</td>
+            <td style="background:#fff;border:1px solid #c8c8c8;"></td>
+            <td style="background:#fff;border:1px solid #c8c8c8;text-align:right;padding:3px 6px;color:#d9534f;">(41,115)</td>
+            <td style="background:#fff;border:1px solid #c8c8c8;"></td>
+            <td style="background:#fff;border:1px solid #c8c8c8;text-align:right;padding:3px 6px;color:#d9534f;">(557,236)</td>
+          </tr>
+          <!-- 영업이익율 -->
+          <tr>
+            <td style="background:#e5f3f7;font-weight:bold;font-style:italic;border:1px solid #c8c8c8;padding:3px 8px;">영업이익율</td>
+            <td style="background:#e5f3f7;border:1px solid #c8c8c8;"></td>
+            <td style="background:#e5f3f7;font-weight:bold;border:1px solid #c8c8c8;text-align:right;padding:3px 6px;color:#d9534f;">-9.9%</td>
+            <td style="background:#e5f3f7;border:1px solid #c8c8c8;"></td>
+            <td style="background:#e5f3f7;font-weight:bold;border:1px solid #c8c8c8;text-align:right;padding:3px 6px;color:#d9534f;">-10.0%</td>
+            <td style="background:#e5f3f7;border:1px solid #c8c8c8;"></td>
+            <td style="background:#e5f3f7;font-weight:bold;border:1px solid #c8c8c8;text-align:right;padding:3px 6px;color:#d9534f;">-10.4%</td>
+            <td style="background:#e5f3f7;border:1px solid #c8c8c8;"></td>
+            <td style="background:#e5f3f7;font-weight:bold;border:1px solid #c8c8c8;text-align:right;padding:3px 6px;color:#d9534f;">-10.0%</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <div id="tab-rs" class="tab-panel">
+    <div class="sec-hdr">
+      <span class="sec-title">실적관리</span>
+      <div class="sec-btns">
+        <button class="btn-teal btn-sm">조회</button>
+        <button class="btn-teal btn-sm">저장</button>
+        <button class="btn-sm" style="background:#f0f0f0;border:1px solid #bbb;">엑셀</button>
+      </div>
+    </div>
+    <div style="overflow-x:auto;">
+      <table class="grid" style="min-width:1300px;font-size:11px;">
+        <colgroup>
+          <col style="width:50px;">
+          <col style="width:65px;">
+          <col style="width:120px;">
+          <col style="width:65px;">
+          <col style="width:82px;">
+          <col style="width:52px;">
+          <col style="width:74px;" span="10">
+        </colgroup>
+        <thead>
+          <tr>
+            <th style="background:#4db5d5;color:#fff;border-color:#3aa0be;">구분</th>
+            <th colspan="2" style="background:#4db5d5;color:#fff;border-color:#3aa0be;">항목</th>
+            <th style="background:#4db5d5;color:#fff;border-color:#3aa0be;">목표</th>
+            <th style="background:#4db5d5;color:#fff;border-color:#3aa0be;">합계</th>
+            <th style="background:#4db5d5;color:#fff;border-color:#3aa0be;">달성률(%)</th>
+            <th style="background:#4db5d5;color:#fff;border-color:#3aa0be;">2025/02</th>
+            <th style="background:#4db5d5;color:#fff;border-color:#3aa0be;">2025/03</th>
+            <th style="background:#4db5d5;color:#fff;border-color:#3aa0be;">2025/04</th>
+            <th style="background:#4db5d5;color:#fff;border-color:#3aa0be;">2025/05</th>
+            <th style="background:#4db5d5;color:#fff;border-color:#3aa0be;">2025/06</th>
+            <th style="background:#4db5d5;color:#fff;border-color:#3aa0be;">2025/07</th>
+            <th style="background:#4db5d5;color:#fff;border-color:#3aa0be;">2025/08</th>
+            <th style="background:#4db5d5;color:#fff;border-color:#3aa0be;">2025/09</th>
+            <th style="background:#4db5d5;color:#fff;border-color:#3aa0be;">2025/10</th>
+            <th style="background:#4db5d5;color:#fff;border-color:#3aa0be;">2025/11</th>
+          </tr>
+        </thead>
+        <tbody>
+          <!-- ── 매출 ───────────────────────────────────── -->
+          <tr>
+            <td rowspan="5" style="text-align:center;background:#f3f3f3;font-weight:bold;">매출</td>
+            <td rowspan="4" style="text-align:center;background:#fafafa;">매출소계</td>
+            <td>사업매출</td>
+            <td style="text-align:right;">0</td><td style="text-align:right;">0</td><td style="text-align:right;">0</td>
+            <td style="text-align:right;">0</td><td style="text-align:right;">0</td><td style="text-align:right;">0</td>
+            <td style="text-align:right;">0</td><td style="text-align:right;">0</td><td style="text-align:right;">0</td>
+            <td style="text-align:right;">0</td><td style="text-align:right;">0</td><td style="text-align:right;">0</td><td style="text-align:right;">0</td>
+          </tr>
+          <tr>
+            <td>서비스매출</td>
+            <td style="text-align:right;">0</td><td style="text-align:right;">0</td><td style="text-align:right;">0</td>
+            <td style="text-align:right;">0</td><td style="text-align:right;">0</td><td style="text-align:right;">0</td>
+            <td style="text-align:right;">0</td><td style="text-align:right;">0</td><td style="text-align:right;">0</td>
+            <td style="text-align:right;">0</td><td style="text-align:right;">0</td><td style="text-align:right;">0</td><td style="text-align:right;">0</td>
+          </tr>
+          <tr>
+            <td>S/W 유지보수 매출</td>
+            <td style="text-align:right;">0</td><td style="text-align:right;">0</td><td style="text-align:right;">0</td>
+            <td style="text-align:right;">0</td><td style="text-align:right;">0</td><td style="text-align:right;">0</td>
+            <td style="text-align:right;">0</td><td style="text-align:right;">0</td><td style="text-align:right;">0</td>
+            <td style="text-align:right;">0</td><td style="text-align:right;">0</td><td style="text-align:right;">0</td><td style="text-align:right;">0</td>
+          </tr>
+          <tr>
+            <td>상품 매출</td>
+            <td style="text-align:right;">0</td><td style="text-align:right;">0</td><td style="text-align:right;">0</td>
+            <td style="text-align:right;">0</td><td style="text-align:right;">0</td><td style="text-align:right;">0</td>
+            <td style="text-align:right;">0</td><td style="text-align:right;">0</td><td style="text-align:right;">0</td>
+            <td style="text-align:right;">0</td><td style="text-align:right;">0</td><td style="text-align:right;">0</td><td style="text-align:right;">0</td>
+          </tr>
+          <tr>
+            <td colspan="2" style="text-align:center;background:#e5f3f7;font-weight:bold;">소계</td>
+            <td style="text-align:right;background:#e5f3f7;font-weight:bold;">0</td><td style="text-align:right;background:#e5f3f7;font-weight:bold;">0</td><td style="text-align:right;background:#e5f3f7;font-weight:bold;">0</td>
+            <td style="text-align:right;background:#e5f3f7;">0</td><td style="text-align:right;background:#e5f3f7;">0</td><td style="text-align:right;background:#e5f3f7;">0</td>
+            <td style="text-align:right;background:#e5f3f7;">0</td><td style="text-align:right;background:#e5f3f7;">0</td><td style="text-align:right;background:#e5f3f7;">0</td>
+            <td style="text-align:right;background:#e5f3f7;">0</td><td style="text-align:right;background:#e5f3f7;">0</td><td style="text-align:right;background:#e5f3f7;">0</td><td style="text-align:right;background:#e5f3f7;">0</td>
+          </tr>
+
+          <!-- ── 비용 > 매입 ─────────────────────────────── -->
+          <tr>
+            <td rowspan="19" style="text-align:center;background:#f3f3f3;font-weight:bold;">비용</td>
+            <td rowspan="4" style="text-align:center;background:#fafafa;">매입</td>
+            <td>매입</td>
+            <td style="text-align:right;">0</td><td style="text-align:right;">0</td><td style="text-align:right;">0</td>
+            <td style="text-align:right;">0</td><td style="text-align:right;">0</td><td style="text-align:right;">0</td>
+            <td style="text-align:right;">0</td><td style="text-align:right;">0</td><td style="text-align:right;">0</td>
+            <td style="text-align:right;">0</td><td style="text-align:right;">0</td><td style="text-align:right;">0</td><td style="text-align:right;">0</td>
+          </tr>
+          <tr>
+            <td>영업수수료</td>
+            <td style="text-align:right;">0</td><td style="text-align:right;">100,000</td><td style="text-align:right;">0</td>
+            <td style="text-align:right;">100,000</td><td style="text-align:right;">0</td><td style="text-align:right;">0</td>
+            <td style="text-align:right;">0</td><td style="text-align:right;">0</td><td style="text-align:right;">0</td>
+            <td style="text-align:right;">0</td><td style="text-align:right;">0</td><td style="text-align:right;">0</td><td style="text-align:right;">0</td>
+          </tr>
+          <tr>
+            <td>외주용역비</td>
+            <td style="text-align:right;">0</td><td style="text-align:right;">2,552,956</td><td style="text-align:right;">0</td>
+            <td style="text-align:right;">48,710</td><td style="text-align:right;">127,121</td><td style="text-align:right;">157,465</td>
+            <td style="text-align:right;">226,123</td><td style="text-align:right;">287,571</td><td style="text-align:right;">383,351</td>
+            <td style="text-align:right;">349,089</td><td style="text-align:right;">325,808</td><td style="text-align:right;">343,514</td><td style="text-align:right;">304,204</td>
+          </tr>
+          <tr>
+            <td colspan="2" style="text-align:center;background:#f0f0f0;font-weight:bold;">소 계</td>
+            <td style="text-align:right;background:#f0f0f0;font-weight:bold;">0</td><td style="text-align:right;background:#f0f0f0;font-weight:bold;">2,652,956</td><td style="text-align:right;background:#f0f0f0;font-weight:bold;">0</td>
+            <td style="text-align:right;background:#f0f0f0;">148,710</td><td style="text-align:right;background:#f0f0f0;">127,121</td><td style="text-align:right;background:#f0f0f0;">157,465</td>
+            <td style="text-align:right;background:#f0f0f0;">226,123</td><td style="text-align:right;background:#f0f0f0;">287,571</td><td style="text-align:right;background:#f0f0f0;">383,351</td>
+            <td style="text-align:right;background:#f0f0f0;">349,089</td><td style="text-align:right;background:#f0f0f0;">325,808</td><td style="text-align:right;background:#f0f0f0;">343,514</td><td style="text-align:right;background:#f0f0f0;">304,204</td>
+          </tr>
+
+          <!-- ── 비용 > 인건비 ──────────────────────────── -->
+          <tr>
+            <td rowspan="6" style="text-align:center;background:#fafafa;">인건비</td>
+            <td>4대보험</td>
+            <td style="text-align:right;">0</td><td style="text-align:right;">23,862</td><td style="text-align:right;">0</td>
+            <td style="text-align:right;">270</td><td style="text-align:right;">2,493</td><td style="text-align:right;">4,836</td>
+            <td style="text-align:right;">2,611</td><td style="text-align:right;">2,676</td><td style="text-align:right;">2,952</td>
+            <td style="text-align:right;">2,967</td><td style="text-align:right;">2,541</td><td style="text-align:right;">1,753</td><td style="text-align:right;">763</td>
+          </tr>
+          <tr>
+            <td>복리후생비</td>
+            <td style="text-align:right;">0</td><td style="text-align:right;">9,541</td><td style="text-align:right;">0</td>
+            <td style="text-align:right;">0</td><td style="text-align:right;">0</td><td style="text-align:right;">423</td>
+            <td style="text-align:right;">314</td><td style="text-align:right;">0</td><td style="text-align:right;">693</td>
+            <td style="text-align:right;">462</td><td style="text-align:right;">218</td><td style="text-align:right;">0</td><td style="text-align:right;">7,431</td>
+          </tr>
+          <tr>
+            <td>사업소세</td>
+            <td style="text-align:right;">0</td><td style="text-align:right;">1,073</td><td style="text-align:right;">0</td>
+            <td style="text-align:right;">13</td><td style="text-align:right;">130</td><td style="text-align:right;">150</td>
+            <td style="text-align:right;">128</td><td style="text-align:right;">131</td><td style="text-align:right;">138</td>
+            <td style="text-align:right;">142</td><td style="text-align:right;">122</td><td style="text-align:right;">82</td><td style="text-align:right;">37</td>
+          </tr>
+          <tr>
+            <td>임직원급여</td>
+            <td style="text-align:right;">0</td><td style="text-align:right;">223,138</td><td style="text-align:right;">0</td>
+            <td style="text-align:right;">2,811</td><td style="text-align:right;">26,869</td><td style="text-align:right;">31,176</td>
+            <td style="text-align:right;">26,586</td><td style="text-align:right;">27,231</td><td style="text-align:right;">28,777</td>
+            <td style="text-align:right;">29,577</td><td style="text-align:right;">25,545</td><td style="text-align:right;">16,928</td><td style="text-align:right;">7,638</td>
+          </tr>
+          <tr>
+            <td>퇴직금</td>
+            <td style="text-align:right;">0</td><td style="text-align:right;">0</td><td style="text-align:right;">0</td>
+            <td style="text-align:right;">0</td><td style="text-align:right;">0</td><td style="text-align:right;">0</td>
+            <td style="text-align:right;">0</td><td style="text-align:right;">0</td><td style="text-align:right;">0</td>
+            <td style="text-align:right;">0</td><td style="text-align:right;">0</td><td style="text-align:right;">0</td><td style="text-align:right;">0</td>
+          </tr>
+          <tr>
+            <td colspan="2" style="text-align:center;background:#f0f0f0;font-weight:bold;">소 계</td>
+            <td style="text-align:right;background:#f0f0f0;font-weight:bold;">0</td><td style="text-align:right;background:#f0f0f0;font-weight:bold;">257,614</td><td style="text-align:right;background:#f0f0f0;font-weight:bold;">0</td>
+            <td style="text-align:right;background:#f0f0f0;">3,094</td><td style="text-align:right;background:#f0f0f0;">29,493</td><td style="text-align:right;background:#f0f0f0;">36,585</td>
+            <td style="text-align:right;background:#f0f0f0;">29,638</td><td style="text-align:right;background:#f0f0f0;">30,037</td><td style="text-align:right;background:#f0f0f0;">32,560</td>
+            <td style="text-align:right;background:#f0f0f0;">33,148</td><td style="text-align:right;background:#f0f0f0;">28,426</td><td style="text-align:right;background:#f0f0f0;">18,763</td><td style="text-align:right;background:#f0f0f0;">15,869</td>
+          </tr>
+
+          <!-- ── 비용 > 부서사업비 ───────────────────────── -->
+          <tr>
+            <td rowspan="8" style="text-align:center;background:#fafafa;">부서사업비</td>
+            <td>교육훈련비</td>
+            <td style="text-align:right;">0</td><td style="text-align:right;">0</td><td style="text-align:right;">0</td>
+            <td style="text-align:right;">0</td><td style="text-align:right;">0</td><td style="text-align:right;">0</td>
+            <td style="text-align:right;">0</td><td style="text-align:right;">0</td><td style="text-align:right;">0</td>
+            <td style="text-align:right;">0</td><td style="text-align:right;">0</td><td style="text-align:right;">0</td><td style="text-align:right;">0</td>
+          </tr>
+          <tr>
+            <td>도서인쇄비</td>
+            <td style="text-align:right;">0</td><td style="text-align:right;">0</td><td style="text-align:right;">0</td>
+            <td style="text-align:right;">0</td><td style="text-align:right;">0</td><td style="text-align:right;">0</td>
+            <td style="text-align:right;">0</td><td style="text-align:right;">0</td><td style="text-align:right;">0</td>
+            <td style="text-align:right;">0</td><td style="text-align:right;">0</td><td style="text-align:right;">0</td><td style="text-align:right;">0</td>
+          </tr>
+          <tr>
+            <td>여비교통비</td>
+            <td style="text-align:right;">0</td><td style="text-align:right;">712</td><td style="text-align:right;">0</td>
+            <td style="text-align:right;">0</td><td style="text-align:right;">0</td><td style="text-align:right;">0</td>
+            <td style="text-align:right;">0</td><td style="text-align:right;">0</td><td style="text-align:right;">0</td>
+            <td style="text-align:right;">0</td><td style="text-align:right;">87</td><td style="text-align:right;">0</td><td style="text-align:right;">625</td>
+          </tr>
+          <tr>
+            <td>연장근무식사비</td>
+            <td style="text-align:right;">0</td><td style="text-align:right;">32,921</td><td style="text-align:right;">0</td>
+            <td style="text-align:right;">167</td><td style="text-align:right;">316</td><td style="text-align:right;">729</td>
+            <td style="text-align:right;">1,416</td><td style="text-align:right;">4,574</td><td style="text-align:right;">5,571</td>
+            <td style="text-align:right;">6,569</td><td style="text-align:right;">6,304</td><td style="text-align:right;">4,175</td><td style="text-align:right;">3,101</td>
+          </tr>
+          <tr>
+            <td>접대비</td>
+            <td style="text-align:right;">0</td><td style="text-align:right;">3,993</td><td style="text-align:right;">0</td>
+            <td style="text-align:right;">2,189</td><td style="text-align:right;">832</td><td style="text-align:right;">0</td>
+            <td style="text-align:right;">0</td><td style="text-align:right;">0</td><td style="text-align:right;">972</td>
+            <td style="text-align:right;">0</td><td style="text-align:right;">0</td><td style="text-align:right;">0</td><td style="text-align:right;">0</td>
+          </tr>
+          <tr>
+            <td>통신비</td>
+            <td style="text-align:right;">0</td><td style="text-align:right;">0</td><td style="text-align:right;">0</td>
+            <td style="text-align:right;">0</td><td style="text-align:right;">0</td><td style="text-align:right;">0</td>
+            <td style="text-align:right;">0</td><td style="text-align:right;">0</td><td style="text-align:right;">0</td>
+            <td style="text-align:right;">0</td><td style="text-align:right;">0</td><td style="text-align:right;">0</td><td style="text-align:right;">0</td>
+          </tr>
+          <tr>
+            <td>회의비</td>
+            <td style="text-align:right;">0</td><td style="text-align:right;">8,261</td><td style="text-align:right;">0</td>
+            <td style="text-align:right;">144</td><td style="text-align:right;">520</td><td style="text-align:right;">589</td>
+            <td style="text-align:right;">1,622</td><td style="text-align:right;">786</td><td style="text-align:right;">1,093</td>
+            <td style="text-align:right;">538</td><td style="text-align:right;">1,255</td><td style="text-align:right;">910</td><td style="text-align:right;">805</td>
+          </tr>
+          <tr>
+            <td colspan="2" style="text-align:center;background:#f0f0f0;font-weight:bold;">소 계</td>
+            <td style="text-align:right;background:#f0f0f0;font-weight:bold;">0</td><td style="text-align:right;background:#f0f0f0;font-weight:bold;">45,888</td><td style="text-align:right;background:#f0f0f0;font-weight:bold;">0</td>
+            <td style="text-align:right;background:#f0f0f0;">2,500</td><td style="text-align:right;background:#f0f0f0;">1,668</td><td style="text-align:right;background:#f0f0f0;">1,319</td>
+            <td style="text-align:right;background:#f0f0f0;">3,038</td><td style="text-align:right;background:#f0f0f0;">5,359</td><td style="text-align:right;background:#f0f0f0;">7,636</td>
+            <td style="text-align:right;background:#f0f0f0;">7,107</td><td style="text-align:right;background:#f0f0f0;">7,646</td><td style="text-align:right;background:#f0f0f0;">5,085</td><td style="text-align:right;background:#f0f0f0;">4,531</td>
+          </tr>
+
+          <!-- ── 비용 소계 ─────────────────────────────── -->
+          <tr>
+            <td colspan="2" style="text-align:center;background:#e5f3f7;font-weight:bold;">소계</td>
+            <td style="text-align:right;background:#e5f3f7;font-weight:bold;">0</td><td style="text-align:right;background:#e5f3f7;font-weight:bold;">2,956,458</td><td style="text-align:right;background:#e5f3f7;font-weight:bold;">0</td>
+            <td style="text-align:right;background:#e5f3f7;font-weight:bold;">154,304</td><td style="text-align:right;background:#e5f3f7;font-weight:bold;">158,282</td><td style="text-align:right;background:#e5f3f7;font-weight:bold;">195,368</td>
+            <td style="text-align:right;background:#e5f3f7;font-weight:bold;">258,799</td><td style="text-align:right;background:#e5f3f7;font-weight:bold;">322,968</td><td style="text-align:right;background:#e5f3f7;font-weight:bold;">423,547</td>
+            <td style="text-align:right;background:#e5f3f7;font-weight:bold;">389,344</td><td style="text-align:right;background:#e5f3f7;font-weight:bold;">361,880</td><td style="text-align:right;background:#e5f3f7;font-weight:bold;">367,362</td><td style="text-align:right;background:#e5f3f7;font-weight:bold;">324,605</td>
+          </tr>
+
+          <!-- ── 영업이익 ─────────────────────────────── -->
+          <tr>
+            <td style="text-align:center;background:#f3f3f3;font-weight:bold;">영업이익</td>
+            <td colspan="2" style="text-align:center;background:#fafafa;">매출-비용</td>
+            <td style="text-align:right;color:#d9534f;font-weight:bold;">0</td><td style="text-align:right;color:#d9534f;font-weight:bold;">-2,956,458</td><td style="text-align:right;">0</td>
+            <td style="text-align:right;color:#d9534f;">-154,304</td><td style="text-align:right;color:#d9534f;">-158,282</td><td style="text-align:right;color:#d9534f;">-195,368</td>
+            <td style="text-align:right;color:#d9534f;">-258,799</td><td style="text-align:right;color:#d9534f;">-322,968</td><td style="text-align:right;color:#d9534f;">-423,547</td>
+            <td style="text-align:right;color:#d9534f;">-389,344</td><td style="text-align:right;color:#d9534f;">-361,880</td><td style="text-align:right;color:#d9534f;">-367,362</td><td style="text-align:right;color:#d9534f;">-324,605</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  function showTab(btn, id) {
+    document.querySelectorAll('.tab-nav button').forEach(b => b.classList.remove('on'));
+    document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('on'));
+    btn.classList.add('on');
+    document.getElementById('tab-' + id).classList.add('on');
+  }
+</script>
+</body>
+</html>

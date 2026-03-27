@@ -1,0 +1,946 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TaskFlow - 프로젝트 진행 상세</title>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    /* ── 1. 색상 토큰 ─────────────────────────────────────────── */
+    :root {
+      --color-bg:               #0a0e1a;
+      --color-surface:          #141925;
+      --color-surface-elevated: #1c2331;
+      --color-border:           #252d3f;
+      --color-text-primary:     #e4e8f0;
+      --color-text-secondary:   #8b95a8;
+      --color-text-tertiary:    #5a6375;
+      --color-accent:           #4f7cff;
+      --color-accent-light:     #6b91ff;
+      --color-success:          #22c55e;
+      --color-warning:          #f59e0b;
+      --color-danger:           #ef4444;
+      --color-purple:           #a855f7;
+      --color-cyan:             #06b6d4;
+      --shadow-sm:  0 1px 2px rgba(0,0,0,0.3);
+      --shadow-md:  0 4px 12px rgba(0,0,0,0.4);
+      --shadow-lg:  0 8px 24px rgba(0,0,0,0.5);
+    }
+
+    /* ── 2. 리셋 & 바디 ──────────────────────────────────────── */
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Instrument Sans', -apple-system, sans-serif;
+      background: var(--color-bg);
+      color: var(--color-text-primary);
+      line-height: 1.6;
+      overflow-x: hidden;
+    }
+
+    /* 배경 글로우 */
+    body::before {
+      content: '';
+      position: fixed; top: -50%; right: -20%;
+      width: 800px; height: 800px;
+      background: radial-gradient(circle, rgba(79,124,255,0.15) 0%, transparent 70%);
+      border-radius: 50%; pointer-events: none; z-index: 0;
+    }
+    body::after {
+      content: '';
+      position: fixed; bottom: -30%; left: -10%;
+      width: 600px; height: 600px;
+      background: radial-gradient(circle, rgba(168,85,247,0.12) 0%, transparent 70%);
+      border-radius: 50%; pointer-events: none; z-index: 0;
+    }
+
+    /* ── 3. 애니메이션 ───────────────────────────────────────── */
+    @keyframes slideInLeft {
+      from { opacity: 0; transform: translateX(-20px); }
+      to   { opacity: 1; transform: translateX(0); }
+    }
+    @keyframes slideInDown {
+      from { opacity: 0; transform: translateY(-20px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes fadeInUp {
+      from { opacity: 0; transform: translateY(20px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ── 4. 레이아웃 컨테이너 ────────────────────────────────── */
+    .container {
+      position: relative; z-index: 1;
+      display: grid;
+      grid-template-columns: 280px 1fr;
+      height: 100vh;
+    }
+
+    /* ── 5. 사이드바 ─────────────────────────────────────────── */
+    .sidebar {
+      background: var(--color-surface);
+      border-right: 1px solid var(--color-border);
+      padding: 24px 0;
+      display: flex; flex-direction: column;
+      animation: slideInLeft 0.5s ease-out;
+    }
+
+    /* 로고 */
+    .logo {
+      padding: 0 24px 24px;
+      display: flex; align-items: center; gap: 12px;
+    }
+    .logo-icon {
+      width: 36px; height: 36px;
+      background: linear-gradient(135deg, var(--color-accent) 0%, var(--color-purple) 100%);
+      border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 700; font-size: 18px; color: white;
+    }
+    .logo-text { font-size: 20px; font-weight: 700; letter-spacing: -0.5px; }
+
+    /* 내비게이션 */
+    .nav { flex: 1; padding: 0 12px; }
+    .nav-section { margin-bottom: 32px; }
+    .nav-label {
+      font-size: 11px; font-weight: 600; text-transform: uppercase;
+      letter-spacing: 1px; color: var(--color-text-tertiary);
+      padding: 0 12px 8px;
+    }
+    .nav-item {
+      display: flex; align-items: center; gap: 12px;
+      padding: 10px 12px; margin-bottom: 4px; border-radius: 8px;
+      color: var(--color-text-secondary); text-decoration: none;
+      font-weight: 500; font-size: 14px;
+      transition: all 0.2s ease; cursor: pointer;
+    }
+    .nav-item:hover { background: var(--color-surface-elevated); color: var(--color-text-primary); }
+    .nav-item.active {
+      background: var(--color-accent); color: white;
+      box-shadow: 0 4px 12px rgba(79,124,255,0.3);
+    }
+    .nav-icon { width: 20px; height: 20px; opacity: 0.8; flex-shrink: 0; }
+    .nav-item.active .nav-icon { opacity: 1; }
+
+    /* 사용자 프로필 */
+    .user-profile {
+      padding: 16px 24px;
+      border-top: 1px solid var(--color-border);
+      display: flex; align-items: center; gap: 12px;
+      cursor: pointer; transition: background 0.2s ease;
+    }
+    .user-profile:hover { background: var(--color-surface-elevated); }
+    .user-avatar {
+      width: 36px; height: 36px; border-radius: 50%;
+      background: linear-gradient(135deg, var(--color-cyan) 0%, var(--color-accent) 100%);
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 600; font-size: 14px;
+    }
+    .user-name { font-size: 14px; font-weight: 600; margin-bottom: 2px; }
+    .user-role { font-size: 12px; color: var(--color-text-tertiary); }
+
+    /* ── 6. 메인 콘텐츠 ──────────────────────────────────────── */
+    .main-content { display: flex; flex-direction: column; overflow: hidden; }
+
+    /* 헤더 */
+    .header {
+      padding: 24px 32px;
+      border-bottom: 1px solid var(--color-border);
+      background: var(--color-surface);
+      display: flex; align-items: center; justify-content: space-between;
+      animation: slideInDown 0.5s ease-out;
+    }
+    .header-left h1 {
+      font-size: 24px; font-weight: 700; letter-spacing: -0.5px; margin-bottom: 4px;
+    }
+    .breadcrumb {
+      display: flex; align-items: center; gap: 8px;
+      font-size: 13px; color: var(--color-text-tertiary);
+    }
+    .breadcrumb a { color: var(--color-accent); text-decoration: none; }
+    .breadcrumb a:hover { text-decoration: underline; }
+    .breadcrumb span { opacity: 0.6; }
+    .header-right { display: flex; gap: 12px; align-items: center; }
+
+    /* 버튼 */
+    .btn {
+      padding: 10px 20px; border-radius: 8px; border: none;
+      font-weight: 600; font-size: 14px; cursor: pointer;
+      transition: all 0.2s ease;
+      font-family: 'Instrument Sans', sans-serif;
+    }
+    .btn-secondary {
+      background: var(--color-surface-elevated);
+      color: var(--color-text-primary);
+      border: 1px solid var(--color-border);
+    }
+    .btn-secondary:hover { background: var(--color-border); transform: translateY(-1px); }
+    .btn-primary {
+      background: var(--color-accent); color: white;
+      box-shadow: 0 4px 12px rgba(79,124,255,0.3);
+    }
+    .btn-primary:hover { background: var(--color-accent-light); transform: translateY(-1px); }
+
+    /* 콘텐츠 영역 */
+    .content-area { flex: 1; overflow-y: auto; padding: 32px; }
+
+    /* ── 7. 공통 섹션 카드 ───────────────────────────────────── */
+    .section-card {
+      background: var(--color-surface);
+      border: 1px solid var(--color-border);
+      border-radius: 16px;
+      padding: 28px;
+      margin-bottom: 24px;
+      animation: fadeInUp 0.5s ease-out both;
+    }
+    .section-title {
+      font-size: 16px; font-weight: 700;
+      color: var(--color-text-primary);
+      margin-bottom: 20px;
+      display: flex; align-items: center; gap: 8px;
+    }
+    .section-title::before {
+      content: '';
+      display: inline-block;
+      width: 3px; height: 16px;
+      background: var(--color-accent);
+      border-radius: 2px;
+    }
+
+    /* ── 8. 우선순위 뱃지 ────────────────────────────────────── */
+    .priority-badge {
+      padding: 4px 10px; border-radius: 6px; font-size: 11px;
+      font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;
+    }
+    .priority-high   { background: rgba(239,68,68,0.15);  color: var(--color-danger); }
+    .priority-medium { background: rgba(245,158,11,0.15); color: var(--color-warning); }
+    .priority-low    { background: rgba(34,197,94,0.15);  color: var(--color-success); }
+
+    /* ── 9. 담당자 아바타 ────────────────────────────────────── */
+    .assignee-avatar {
+      width: 28px; height: 28px; border-radius: 50%;
+      background: linear-gradient(135deg, var(--color-accent) 0%, var(--color-purple) 100%);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 12px; font-weight: 600; flex-shrink: 0;
+    }
+  </style>
+</head>
+<body>
+<div class="container">
+
+  <!-- ══════════════ 사이드바 ══════════════ -->
+  <aside class="sidebar">
+
+    <!-- 로고 -->
+    <div class="logo">
+      <div class="logo-icon">TF</div>
+      <div class="logo-text">TaskFlow</div>
+    </div>
+
+    <!-- 내비게이션 -->
+    <nav class="nav">
+
+      <!-- 메인 메뉴 -->
+      <div class="nav-section">
+        <div class="nav-label">메인 메뉴</div>
+
+        <a href="project-management-mockup.html" class="nav-item">
+          <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+          </svg>
+          대시보드
+        </a>
+
+        <a href="project-detail2.html" class="nav-item active">
+          <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+          </svg>
+          프로젝트
+        </a>
+
+        <a href="#" class="nav-item">
+          <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+          </svg>
+          계약
+        </a>
+
+        <a href="#" class="nav-item">
+          <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+          </svg>
+          타임라인
+        </a>
+      </div>
+
+      <!-- 워크스페이스 -->
+      <div class="nav-section">
+        <div class="nav-label">워크스페이스</div>
+
+        <a href="#" class="nav-item">
+          <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/>
+          </svg>
+          팀원
+        </a>
+
+        <a href="#" class="nav-item">
+          <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+          </svg>
+          캘린더
+        </a>
+
+        <a href="#" class="nav-item">
+          <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+          </svg>
+          리포트
+        </a>
+      </div>
+
+    </nav>
+
+    <!-- 사용자 프로필 -->
+    <div class="user-profile">
+      <div class="user-avatar">김</div>
+      <div>
+        <div class="user-name">김태희</div>
+        <div class="user-role">프로젝트 매니저</div>
+      </div>
+    </div>
+
+  </aside>
+
+  <!-- ══════════════ 메인 콘텐츠 ══════════════ -->
+  <main class="main-content">
+
+    <!-- 헤더 -->
+    <div class="header">
+      <div class="header-left">
+        <h1>메리츠 증권 2단계 개발 — 진행 상세</h1>
+        <div class="breadcrumb">
+          <a href="project-management-mockup.html">대시보드</a>
+          <span>/</span>
+          <a href="project-detail2.html">프로젝트</a>
+          <span>/</span>
+          메리츠 증권 2단계 개발
+        </div>
+      </div>
+      <div class="header-right">
+        <a href="project-management-mockup.html">
+          <button class="btn btn-secondary">← 대시보드로 돌아가기</button>
+        </a>
+        <a href="project-detail-input.html">
+          <button class="btn btn-secondary"
+            style="background:rgba(79,124,255,0.15);border:1px solid rgba(79,124,255,0.4);color:#6b91ff;">
+            ✏ 진행상황 입력
+          </button>
+        </a>
+        <button id="refresh-btn" class="btn btn-secondary" onclick="refreshData()"
+          style="background:rgba(34,197,94,0.12);border:1px solid rgba(34,197,94,0.35);color:#22c55e;">
+          ↻ 갱신
+        </button>
+        <button class="btn btn-primary">보고서 출력</button>
+      </div>
+    </div>
+
+    <!-- 콘텐츠 영역 -->
+    <div class="content-area">
+
+      <!-- ── 섹션 1: 프로젝트 진행 상황 요약 ── -->
+      <div class="section-card" style="animation-delay:0.05s;">
+
+        <!-- 상단 행: 프로젝트명 + 우선순위 -->
+        <div style="display:flex; justify-content:space-between; align-items:start; margin-bottom:20px;">
+          <div>
+            <h2 id="pg-title"
+              style="font-size:22px; font-weight:700; margin-bottom:8px;">
+              메리츠 증권 2단계 개발
+            </h2>
+            <div style="display:flex; gap:20px; color:var(--color-text-secondary); font-size:14px;">
+              <!-- 고객사 -->
+              <div style="display:flex; align-items:center; gap:6px;">
+                <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
+                </svg>
+                <span id="pg-client">메리츠화재</span>
+              </div>
+              <!-- 계약기간 -->
+              <div style="display:flex; align-items:center; gap:6px;">
+                <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                </svg>
+                <span id="pg-period">2026.01.01 ~ 2026.10.31</span>
+              </div>
+            </div>
+          </div>
+          <span id="pg-priority" class="priority-badge priority-high">High</span>
+        </div>
+
+        <!-- 전체 진행률 바 -->
+        <div style="margin-bottom:12px;">
+          <div style="display:flex; justify-content:space-between; margin-bottom:8px;">
+            <span style="font-size:13px; font-weight:600; color:var(--color-text-secondary);">전체 진행률</span>
+            <span id="pg-progress-text"
+              style="font-size:13px; font-weight:700; color:var(--color-accent);">65%</span>
+          </div>
+          <div style="height:8px; background:var(--color-border); border-radius:4px; overflow:hidden;">
+            <div id="pg-progress-bar"
+              style="height:100%; width:65%;
+                background:linear-gradient(90deg, var(--color-accent) 0%, var(--color-accent-light) 100%);
+                border-radius:4px; transition:width 0.4s ease;">
+            </div>
+          </div>
+        </div>
+
+        <!-- 하단 통계 그리드 -->
+        <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:16px; margin-top:20px;">
+          <!-- 경과 일수 -->
+          <div>
+            <div style="font-size:12px; color:var(--color-text-tertiary); margin-bottom:4px;">경과 일수</div>
+            <div id="pg-elapsed" style="font-size:22px; font-weight:700;">42일</div>
+          </div>
+          <!-- 남은 일수 -->
+          <div>
+            <div style="font-size:12px; color:var(--color-text-tertiary); margin-bottom:4px;">남은 일수</div>
+            <div id="pg-remain" style="font-size:22px; font-weight:700;">261일</div>
+          </div>
+          <!-- 담당자 -->
+          <div>
+            <div style="font-size:12px; color:var(--color-text-tertiary); margin-bottom:4px;">담당자</div>
+            <div style="display:flex; align-items:center; gap:8px;">
+              <div id="pg-manager-avatar" class="assignee-avatar">박</div>
+              <span id="pg-manager-name" style="font-size:14px; font-weight:600;">박민수</span>
+            </div>
+          </div>
+        </div>
+
+      </div><!-- /섹션1 -->
+
+      <!-- ── 섹션 2: 마일스톤 진행 현황 ── -->
+      <div class="section-card" style="animation-delay:0.1s;">
+        <div class="section-title">마일스톤 진행 현황</div>
+
+        <div id="pg-milestones" style="position:relative; padding-left:32px;">
+          <!-- 수직 연결선 -->
+          <div style="position:absolute; left:11px; top:24px; bottom:24px; width:2px; background:var(--color-border);"></div>
+
+          <!-- 1단계: 완료 -->
+          <div style="position:relative; margin-bottom:28px;">
+            <div style="position:absolute; left:-32px; top:4px; width:24px; height:24px; border-radius:50%;
+              background:var(--color-success); border:3px solid var(--color-surface);
+              display:flex; align-items:center; justify-content:center; z-index:1;">
+              <svg width="12" height="12" fill="none" stroke="white" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/>
+              </svg>
+            </div>
+            <div style="background:var(--color-surface-elevated); border:1px solid var(--color-border);
+              border-radius:10px; padding:16px;">
+              <div style="display:flex; justify-content:space-between; align-items:start; margin-bottom:8px;">
+                <div>
+                  <div style="font-size:15px; font-weight:600; margin-bottom:4px;">1단계: 요구사항 분석</div>
+                  <div style="font-size:13px; color:var(--color-text-tertiary);">2026.01.01 ~ 2026.02.15</div>
+                </div>
+                <span style="font-size:12px; padding:4px 10px; border-radius:6px;
+                  background:rgba(34,197,94,0.15); color:var(--color-success); font-weight:600;">완료</span>
+              </div>
+              <div style="font-size:13px; color:var(--color-text-secondary);">
+                • 사용자 요구사항 정의서 작성 완료<br>• 시스템 아키텍처 설계 완료
+              </div>
+            </div>
+          </div>
+
+          <!-- 2단계: 진행중 -->
+          <div style="position:relative; margin-bottom:28px;">
+            <div style="position:absolute; left:-32px; top:4px; width:24px; height:24px; border-radius:50%;
+              background:var(--color-accent); border:3px solid var(--color-surface);
+              display:flex; align-items:center; justify-content:center; z-index:1;
+              box-shadow:0 0 0 4px rgba(79,124,255,0.2);">
+              <div style="width:8px; height:8px; border-radius:50%; background:white;"></div>
+            </div>
+            <div style="background:var(--color-surface-elevated); border:1px solid var(--color-accent);
+              border-radius:10px; padding:16px; box-shadow:0 0 0 1px rgba(79,124,255,0.1);">
+              <div style="display:flex; justify-content:space-between; align-items:start; margin-bottom:8px;">
+                <div>
+                  <div style="font-size:15px; font-weight:600; margin-bottom:4px;">2단계: 개발 및 구현</div>
+                  <div style="font-size:13px; color:var(--color-text-tertiary);">2026.02.16 ~ 2026.07.31</div>
+                </div>
+                <span style="font-size:12px; padding:4px 10px; border-radius:6px;
+                  background:rgba(79,124,255,0.15); color:var(--color-accent); font-weight:600;">진행중</span>
+              </div>
+              <div style="font-size:13px; color:var(--color-text-secondary); margin-bottom:12px;">
+                • 프론트엔드 개발 70% 완료<br>• 백엔드 API 개발 60% 완료<br>• 데이터베이스 스키마 구축 완료
+              </div>
+              <!-- 단계 진행률 바 -->
+              <div>
+                <div style="display:flex; justify-content:space-between; margin-bottom:6px;">
+                  <span style="font-size:12px; color:var(--color-text-tertiary);">단계 진행률</span>
+                  <span style="font-size:12px; font-weight:600; color:var(--color-accent);">65%</span>
+                </div>
+                <div style="height:6px; background:var(--color-border); border-radius:3px; overflow:hidden;">
+                  <div style="height:100%; width:65%; background:var(--color-accent); border-radius:3px;"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 3단계: 대기 -->
+          <div style="position:relative; margin-bottom:28px;">
+            <div style="position:absolute; left:-32px; top:4px; width:24px; height:24px; border-radius:50%;
+              background:var(--color-surface-elevated); border:2px solid var(--color-border); z-index:1;">
+            </div>
+            <div style="background:var(--color-surface-elevated); border:1px solid var(--color-border);
+              border-radius:10px; padding:16px; opacity:0.7;">
+              <div style="display:flex; justify-content:space-between; align-items:start; margin-bottom:8px;">
+                <div>
+                  <div style="font-size:15px; font-weight:600; margin-bottom:4px;">3단계: 테스트 및 QA</div>
+                  <div style="font-size:13px; color:var(--color-text-tertiary);">2026.08.01 ~ 2026.09.15</div>
+                </div>
+                <span style="font-size:12px; padding:4px 10px; border-radius:6px;
+                  background:rgba(90,99,117,0.15); color:var(--color-text-tertiary); font-weight:600;">대기</span>
+              </div>
+              <div style="font-size:13px; color:var(--color-text-tertiary);">
+                • 통합 테스트 예정<br>• 성능 테스트 예정<br>• 사용자 인수 테스트 예정
+              </div>
+            </div>
+          </div>
+
+          <!-- 4단계: 대기 -->
+          <div style="position:relative;">
+            <div style="position:absolute; left:-32px; top:4px; width:24px; height:24px; border-radius:50%;
+              background:var(--color-surface-elevated); border:2px solid var(--color-border); z-index:1;">
+            </div>
+            <div style="background:var(--color-surface-elevated); border:1px solid var(--color-border);
+              border-radius:10px; padding:16px; opacity:0.7;">
+              <div style="display:flex; justify-content:space-between; align-items:start; margin-bottom:8px;">
+                <div>
+                  <div style="font-size:15px; font-weight:600; margin-bottom:4px;">4단계: 배포 및 안정화</div>
+                  <div style="font-size:13px; color:var(--color-text-tertiary);">2026.09.16 ~ 2026.10.31</div>
+                </div>
+                <span style="font-size:12px; padding:4px 10px; border-radius:6px;
+                  background:rgba(90,99,117,0.15); color:var(--color-text-tertiary); font-weight:600;">대기</span>
+              </div>
+              <div style="font-size:13px; color:var(--color-text-tertiary);">
+                • 운영 환경 배포 예정<br>• 모니터링 및 안정화 예정<br>• 최종 인수 및 종료 예정
+              </div>
+            </div>
+          </div>
+
+        </div><!-- /pg-milestones -->
+      </div><!-- /섹션2 -->
+
+      <!-- ── 섹션 3: 월별 인력 투입 계획/현황 ── -->
+      <div class="section-card" style="animation-delay:0.15s;">
+        <div class="section-title">월별 인력 투입 계획 / 현황</div>
+        <div style="overflow-x: auto; border-radius: 12px; border: 1px solid var(--color-border);">
+        <table style="width: 100%; border-collapse: collapse; font-size: 12px; min-width: 900px;">
+          <colgroup>
+            <col style="width:80px;"><col style="width:60px;"><col style="width:60px;"><col style="width:100px;">
+            <col style="width:52px;" span="10"><col style="width:64px;"><col style="width:64px;">
+          </colgroup>
+          <thead>
+            <tr>
+              <th rowspan="2" style="background:#1c2331;color:#8b95a8;font-weight:600;padding:10px 8px;text-align:center;border-bottom:1px solid var(--color-border);border-right:1px solid var(--color-border);">조직</th>
+              <th rowspan="2" style="background:#1c2331;color:#8b95a8;font-weight:600;padding:10px 8px;text-align:center;border-bottom:1px solid var(--color-border);border-right:1px solid var(--color-border);">소속</th>
+              <th rowspan="2" style="background:#1c2331;color:#8b95a8;font-weight:600;padding:10px 8px;text-align:center;border-bottom:1px solid var(--color-border);border-right:1px solid var(--color-border);">등급</th>
+              <th rowspan="2" style="background:#1c2331;color:#8b95a8;font-weight:600;padding:10px 8px;text-align:center;border-bottom:1px solid var(--color-border);border-right:1px solid var(--color-border);">역할</th>
+              <th colspan="10" style="background:#1a2540;color:#6b91ff;font-weight:700;padding:8px;text-align:center;border-bottom:1px solid var(--color-border);border-right:1px solid var(--color-border);">2026</th>
+              <th rowspan="2" style="background:#1c2331;color:#f59e0b;font-weight:700;padding:10px 8px;text-align:center;border-bottom:1px solid var(--color-border);border-right:1px solid var(--color-border);">합계</th>
+              <th rowspan="2" style="background:#1c2331;color:#8b95a8;font-weight:600;padding:10px 8px;text-align:center;border-bottom:1px solid var(--color-border);">비고</th>
+            </tr>
+            <tr>
+              <th style="background:#141925;color:#8b95a8;font-weight:600;padding:8px 4px;text-align:center;border-bottom:2px solid var(--color-accent);border-right:1px solid var(--color-border);">01</th>
+              <th style="background:#141925;color:#8b95a8;font-weight:600;padding:8px 4px;text-align:center;border-bottom:2px solid var(--color-accent);border-right:1px solid var(--color-border);">02</th>
+              <th style="background:#141925;color:#8b95a8;font-weight:600;padding:8px 4px;text-align:center;border-bottom:2px solid var(--color-accent);border-right:1px solid var(--color-border);">03</th>
+              <th style="background:#141925;color:#8b95a8;font-weight:600;padding:8px 4px;text-align:center;border-bottom:2px solid var(--color-accent);border-right:1px solid var(--color-border);">04</th>
+              <th style="background:#141925;color:#8b95a8;font-weight:600;padding:8px 4px;text-align:center;border-bottom:2px solid var(--color-accent);border-right:1px solid var(--color-border);">05</th>
+              <th style="background:#141925;color:#8b95a8;font-weight:600;padding:8px 4px;text-align:center;border-bottom:2px solid var(--color-accent);border-right:1px solid var(--color-border);">06</th>
+              <th style="background:#141925;color:#8b95a8;font-weight:600;padding:8px 4px;text-align:center;border-bottom:2px solid var(--color-accent);border-right:1px solid var(--color-border);">07</th>
+              <th style="background:#141925;color:#8b95a8;font-weight:600;padding:8px 4px;text-align:center;border-bottom:2px solid var(--color-accent);border-right:1px solid var(--color-border);">08</th>
+              <th style="background:#141925;color:#8b95a8;font-weight:600;padding:8px 4px;text-align:center;border-bottom:2px solid var(--color-accent);border-right:1px solid var(--color-border);">09</th>
+              <th style="background:#141925;color:#8b95a8;font-weight:600;padding:8px 4px;text-align:center;border-bottom:2px solid var(--color-accent);border-right:1px solid var(--color-border);">10</th>
+            </tr>
+          </thead>
+          <tbody>
+            <!-- 특급 PM/PL -->
+            <tr style="border-bottom:1px solid #1e2738;">
+              <td rowspan="2" style="padding:8px;text-align:center;color:#c8d0e0;border-right:1px solid var(--color-border);background:#141925;font-weight:500;">SI사업 2팀</td>
+              <td rowspan="2" style="padding:8px;text-align:center;color:#8b95a8;border-right:1px solid var(--color-border);">당사</td>
+              <td rowspan="2" style="padding:8px;text-align:center;border-right:1px solid var(--color-border);"><span style="background:rgba(79,124,255,0.15);color:#6b91ff;padding:2px 7px;border-radius:4px;font-weight:600;font-size:11px;">특급</span></td>
+              <td rowspan="2" style="padding:8px;text-align:center;color:#c8d0e0;border-right:1px solid var(--color-border);">PM/PL</td>
+              <td style="padding:6px 4px;text-align:center;color:#e4e8f0;font-weight:500;border-right:1px solid #1e2738;">1.00</td><td style="padding:6px 4px;text-align:center;color:#e4e8f0;font-weight:500;border-right:1px solid #1e2738;">1.00</td><td style="padding:6px 4px;text-align:center;color:#e4e8f0;font-weight:500;border-right:1px solid #1e2738;">1.00</td><td style="padding:6px 4px;text-align:center;color:#e4e8f0;font-weight:500;border-right:1px solid #1e2738;">1.00</td><td style="padding:6px 4px;text-align:center;color:#e4e8f0;font-weight:500;border-right:1px solid #1e2738;">1.00</td><td style="padding:6px 4px;text-align:center;color:#e4e8f0;font-weight:500;border-right:1px solid #1e2738;">1.00</td><td style="padding:6px 4px;text-align:center;color:#e4e8f0;font-weight:500;border-right:1px solid #1e2738;">1.00</td><td style="padding:6px 4px;text-align:center;color:#e4e8f0;font-weight:500;border-right:1px solid #1e2738;">1.00</td><td style="padding:6px 4px;text-align:center;color:#e4e8f0;font-weight:500;border-right:1px solid #1e2738;">1.00</td><td style="padding:6px 4px;text-align:center;color:#e4e8f0;font-weight:500;border-right:1px solid var(--color-border);">1.00</td>
+              <td style="padding:6px 4px;text-align:center;font-weight:700;color:#f59e0b;border-right:1px solid var(--color-border);">10.00</td><td style="padding:6px 4px;text-align:center;color:#5a6375;font-size:11px;">계획</td>
+            </tr>
+            <tr style="border-bottom:1px solid var(--color-border);background:rgba(79,124,255,0.03);">
+              <td style="padding:6px 4px;text-align:center;color:#22c55e;font-weight:500;border-right:1px solid #1e2738;">1.00</td><td style="padding:6px 4px;text-align:center;color:#22c55e;font-weight:500;border-right:1px solid #1e2738;">1.00</td><td style="padding:6px 4px;text-align:center;color:#ef4444;font-weight:500;border-right:1px solid #1e2738;">0.80</td><td style="padding:6px 4px;text-align:center;color:#5a6375;border-right:1px solid #1e2738;">-</td><td style="padding:6px 4px;text-align:center;color:#5a6375;border-right:1px solid #1e2738;">-</td><td style="padding:6px 4px;text-align:center;color:#5a6375;border-right:1px solid #1e2738;">-</td><td style="padding:6px 4px;text-align:center;color:#5a6375;border-right:1px solid #1e2738;">-</td><td style="padding:6px 4px;text-align:center;color:#5a6375;border-right:1px solid #1e2738;">-</td><td style="padding:6px 4px;text-align:center;color:#5a6375;border-right:1px solid #1e2738;">-</td><td style="padding:6px 4px;text-align:center;color:#5a6375;border-right:1px solid var(--color-border);">-</td>
+              <td style="padding:6px 4px;text-align:center;font-weight:700;color:#22c55e;border-right:1px solid var(--color-border);">2.80</td><td style="padding:6px 4px;text-align:center;color:#5a6375;font-size:11px;">실적</td>
+            </tr>
+            <!-- 고급 사업관리 -->
+            <tr style="border-bottom:1px solid #1e2738;">
+              <td rowspan="2" style="padding:8px;text-align:center;color:#c8d0e0;border-right:1px solid var(--color-border);background:#141925;font-weight:500;">SI사업 2팀</td>
+              <td rowspan="2" style="padding:8px;text-align:center;color:#8b95a8;border-right:1px solid var(--color-border);">당사</td>
+              <td rowspan="2" style="padding:8px;text-align:center;border-right:1px solid var(--color-border);"><span style="background:rgba(168,85,247,0.15);color:#a855f7;padding:2px 7px;border-radius:4px;font-weight:600;font-size:11px;">고급</span></td>
+              <td rowspan="2" style="padding:8px;text-align:center;color:#c8d0e0;border-right:1px solid var(--color-border);">사업관리</td>
+              <td style="padding:6px 4px;text-align:center;color:#e4e8f0;font-weight:500;border-right:1px solid #1e2738;">1.00</td><td style="padding:6px 4px;text-align:center;color:#e4e8f0;font-weight:500;border-right:1px solid #1e2738;">1.00</td><td style="padding:6px 4px;text-align:center;color:#e4e8f0;font-weight:500;border-right:1px solid #1e2738;">1.00</td><td style="padding:6px 4px;text-align:center;color:#e4e8f0;font-weight:500;border-right:1px solid #1e2738;">1.00</td><td style="padding:6px 4px;text-align:center;color:#e4e8f0;font-weight:500;border-right:1px solid #1e2738;">1.00</td><td style="padding:6px 4px;text-align:center;color:#e4e8f0;font-weight:500;border-right:1px solid #1e2738;">1.00</td><td style="padding:6px 4px;text-align:center;color:#e4e8f0;font-weight:500;border-right:1px solid #1e2738;">1.00</td><td style="padding:6px 4px;text-align:center;color:#e4e8f0;font-weight:500;border-right:1px solid #1e2738;">1.00</td><td style="padding:6px 4px;text-align:center;color:#e4e8f0;font-weight:500;border-right:1px solid #1e2738;">1.00</td><td style="padding:6px 4px;text-align:center;color:#e4e8f0;font-weight:500;border-right:1px solid var(--color-border);">1.00</td>
+              <td style="padding:6px 4px;text-align:center;font-weight:700;color:#f59e0b;border-right:1px solid var(--color-border);">10.00</td><td style="padding:6px 4px;text-align:center;color:#5a6375;font-size:11px;">계획</td>
+            </tr>
+            <tr style="border-bottom:1px solid var(--color-border);background:rgba(79,124,255,0.03);">
+              <td style="padding:6px 4px;text-align:center;color:#22c55e;font-weight:500;border-right:1px solid #1e2738;">1.00</td><td style="padding:6px 4px;text-align:center;color:#22c55e;font-weight:500;border-right:1px solid #1e2738;">1.00</td><td style="padding:6px 4px;text-align:center;color:#22c55e;font-weight:500;border-right:1px solid #1e2738;">1.00</td><td style="padding:6px 4px;text-align:center;color:#5a6375;border-right:1px solid #1e2738;">-</td><td style="padding:6px 4px;text-align:center;color:#5a6375;border-right:1px solid #1e2738;">-</td><td style="padding:6px 4px;text-align:center;color:#5a6375;border-right:1px solid #1e2738;">-</td><td style="padding:6px 4px;text-align:center;color:#5a6375;border-right:1px solid #1e2738;">-</td><td style="padding:6px 4px;text-align:center;color:#5a6375;border-right:1px solid #1e2738;">-</td><td style="padding:6px 4px;text-align:center;color:#5a6375;border-right:1px solid #1e2738;">-</td><td style="padding:6px 4px;text-align:center;color:#5a6375;border-right:1px solid var(--color-border);">-</td>
+              <td style="padding:6px 4px;text-align:center;font-weight:700;color:#22c55e;border-right:1px solid var(--color-border);">3.00</td><td style="padding:6px 4px;text-align:center;color:#5a6375;font-size:11px;">실적</td>
+            </tr>
+            <!-- 고급 업무분석/설계 -->
+            <tr style="border-bottom:1px solid #1e2738;">
+              <td rowspan="2" style="padding:8px;text-align:center;color:#c8d0e0;border-right:1px solid var(--color-border);background:#141925;font-weight:500;">SI사업 2팀</td>
+              <td rowspan="2" style="padding:8px;text-align:center;color:#8b95a8;border-right:1px solid var(--color-border);">외주</td>
+              <td rowspan="2" style="padding:8px;text-align:center;border-right:1px solid var(--color-border);"><span style="background:rgba(168,85,247,0.15);color:#a855f7;padding:2px 7px;border-radius:4px;font-weight:600;font-size:11px;">고급</span></td>
+              <td rowspan="2" style="padding:8px;text-align:center;color:#c8d0e0;border-right:1px solid var(--color-border);">업무분석/설계</td>
+              <td style="padding:6px 4px;text-align:center;color:#e4e8f0;font-weight:500;border-right:1px solid #1e2738;">3.00</td><td style="padding:6px 4px;text-align:center;color:#e4e8f0;font-weight:500;border-right:1px solid #1e2738;">3.00</td><td style="padding:6px 4px;text-align:center;color:#e4e8f0;font-weight:500;border-right:1px solid #1e2738;">3.00</td><td style="padding:6px 4px;text-align:center;color:#e4e8f0;font-weight:500;border-right:1px solid #1e2738;">3.00</td><td style="padding:6px 4px;text-align:center;color:#e4e8f0;font-weight:500;border-right:1px solid #1e2738;">3.00</td><td style="padding:6px 4px;text-align:center;color:#e4e8f0;font-weight:500;border-right:1px solid #1e2738;">3.00</td><td style="padding:6px 4px;text-align:center;color:#e4e8f0;font-weight:500;border-right:1px solid #1e2738;">3.00</td><td style="padding:6px 4px;text-align:center;color:#e4e8f0;font-weight:500;border-right:1px solid #1e2738;">2.00</td><td style="padding:6px 4px;text-align:center;color:#e4e8f0;font-weight:500;border-right:1px solid #1e2738;">2.00</td><td style="padding:6px 4px;text-align:center;color:#e4e8f0;font-weight:500;border-right:1px solid var(--color-border);">2.00</td>
+              <td style="padding:6px 4px;text-align:center;font-weight:700;color:#f59e0b;border-right:1px solid var(--color-border);">28.00</td><td style="padding:6px 4px;text-align:center;color:#5a6375;font-size:11px;">계획</td>
+            </tr>
+            <tr style="border-bottom:1px solid var(--color-border);background:rgba(79,124,255,0.03);">
+              <td style="padding:6px 4px;text-align:center;color:#22c55e;font-weight:500;border-right:1px solid #1e2738;">3.00</td><td style="padding:6px 4px;text-align:center;color:#22c55e;font-weight:500;border-right:1px solid #1e2738;">3.00</td><td style="padding:6px 4px;text-align:center;color:#ef4444;font-weight:500;border-right:1px solid #1e2738;">2.50</td><td style="padding:6px 4px;text-align:center;color:#5a6375;border-right:1px solid #1e2738;">-</td><td style="padding:6px 4px;text-align:center;color:#5a6375;border-right:1px solid #1e2738;">-</td><td style="padding:6px 4px;text-align:center;color:#5a6375;border-right:1px solid #1e2738;">-</td><td style="padding:6px 4px;text-align:center;color:#5a6375;border-right:1px solid #1e2738;">-</td><td style="padding:6px 4px;text-align:center;color:#5a6375;border-right:1px solid #1e2738;">-</td><td style="padding:6px 4px;text-align:center;color:#5a6375;border-right:1px solid #1e2738;">-</td><td style="padding:6px 4px;text-align:center;color:#5a6375;border-right:1px solid var(--color-border);">-</td>
+              <td style="padding:6px 4px;text-align:center;font-weight:700;color:#22c55e;border-right:1px solid var(--color-border);">8.50</td><td style="padding:6px 4px;text-align:center;color:#5a6375;font-size:11px;">실적</td>
+            </tr>
+            <!-- 중급 개발 -->
+            <tr style="border-bottom:1px solid #1e2738;">
+              <td rowspan="2" style="padding:8px;text-align:center;color:#c8d0e0;border-right:1px solid var(--color-border);background:#141925;font-weight:500;">SI사업 2팀</td>
+              <td rowspan="2" style="padding:8px;text-align:center;color:#8b95a8;border-right:1px solid var(--color-border);">외주</td>
+              <td rowspan="2" style="padding:8px;text-align:center;border-right:1px solid var(--color-border);"><span style="background:rgba(34,197,94,0.15);color:#22c55e;padding:2px 7px;border-radius:4px;font-weight:600;font-size:11px;">중급</span></td>
+              <td rowspan="2" style="padding:8px;text-align:center;color:#c8d0e0;border-right:1px solid var(--color-border);">개발</td>
+              <td style="padding:6px 4px;text-align:center;color:#e4e8f0;font-weight:500;border-right:1px solid #1e2738;">2.00</td><td style="padding:6px 4px;text-align:center;color:#e4e8f0;font-weight:500;border-right:1px solid #1e2738;">2.00</td><td style="padding:6px 4px;text-align:center;color:#e4e8f0;font-weight:500;border-right:1px solid #1e2738;">4.00</td><td style="padding:6px 4px;text-align:center;color:#e4e8f0;font-weight:500;border-right:1px solid #1e2738;">4.00</td><td style="padding:6px 4px;text-align:center;color:#e4e8f0;font-weight:500;border-right:1px solid #1e2738;">4.00</td><td style="padding:6px 4px;text-align:center;color:#e4e8f0;font-weight:500;border-right:1px solid #1e2738;">4.00</td><td style="padding:6px 4px;text-align:center;color:#e4e8f0;font-weight:500;border-right:1px solid #1e2738;">4.00</td><td style="padding:6px 4px;text-align:center;color:#e4e8f0;font-weight:500;border-right:1px solid #1e2738;">4.00</td><td style="padding:6px 4px;text-align:center;color:#e4e8f0;font-weight:500;border-right:1px solid #1e2738;">2.00</td><td style="padding:6px 4px;text-align:center;color:#e4e8f0;font-weight:500;border-right:1px solid var(--color-border);">2.00</td>
+              <td style="padding:6px 4px;text-align:center;font-weight:700;color:#f59e0b;border-right:1px solid var(--color-border);">32.00</td><td style="padding:6px 4px;text-align:center;color:#5a6375;font-size:11px;">계획</td>
+            </tr>
+            <tr style="border-bottom:1px solid var(--color-border);background:rgba(79,124,255,0.03);">
+              <td style="padding:6px 4px;text-align:center;color:#22c55e;font-weight:500;border-right:1px solid #1e2738;">2.00</td><td style="padding:6px 4px;text-align:center;color:#22c55e;font-weight:500;border-right:1px solid #1e2738;">2.00</td><td style="padding:6px 4px;text-align:center;color:#22c55e;font-weight:500;border-right:1px solid #1e2738;">4.00</td><td style="padding:6px 4px;text-align:center;color:#5a6375;border-right:1px solid #1e2738;">-</td><td style="padding:6px 4px;text-align:center;color:#5a6375;border-right:1px solid #1e2738;">-</td><td style="padding:6px 4px;text-align:center;color:#5a6375;border-right:1px solid #1e2738;">-</td><td style="padding:6px 4px;text-align:center;color:#5a6375;border-right:1px solid #1e2738;">-</td><td style="padding:6px 4px;text-align:center;color:#5a6375;border-right:1px solid #1e2738;">-</td><td style="padding:6px 4px;text-align:center;color:#5a6375;border-right:1px solid #1e2738;">-</td><td style="padding:6px 4px;text-align:center;color:#5a6375;border-right:1px solid var(--color-border);">-</td>
+              <td style="padding:6px 4px;text-align:center;font-weight:700;color:#22c55e;border-right:1px solid var(--color-border);">8.00</td><td style="padding:6px 4px;text-align:center;color:#5a6375;font-size:11px;">실적</td>
+            </tr>
+            <!-- 초급 개발 -->
+            <tr style="border-bottom:1px solid #1e2738;">
+              <td rowspan="2" style="padding:8px;text-align:center;color:#c8d0e0;border-right:1px solid var(--color-border);background:#141925;font-weight:500;">SI사업 2팀</td>
+              <td rowspan="2" style="padding:8px;text-align:center;color:#8b95a8;border-right:1px solid var(--color-border);">외주</td>
+              <td rowspan="2" style="padding:8px;text-align:center;border-right:1px solid var(--color-border);"><span style="background:rgba(245,158,11,0.15);color:#f59e0b;padding:2px 7px;border-radius:4px;font-weight:600;font-size:11px;">초급</span></td>
+              <td rowspan="2" style="padding:8px;text-align:center;color:#c8d0e0;border-right:1px solid var(--color-border);">개발</td>
+              <td style="padding:6px 4px;text-align:center;color:#e4e8f0;font-weight:500;border-right:1px solid #1e2738;">2.00</td><td style="padding:6px 4px;text-align:center;color:#e4e8f0;font-weight:500;border-right:1px solid #1e2738;">2.00</td><td style="padding:6px 4px;text-align:center;color:#e4e8f0;font-weight:500;border-right:1px solid #1e2738;">4.00</td><td style="padding:6px 4px;text-align:center;color:#e4e8f0;font-weight:500;border-right:1px solid #1e2738;">4.00</td><td style="padding:6px 4px;text-align:center;color:#e4e8f0;font-weight:500;border-right:1px solid #1e2738;">4.00</td><td style="padding:6px 4px;text-align:center;color:#e4e8f0;font-weight:500;border-right:1px solid #1e2738;">4.00</td><td style="padding:6px 4px;text-align:center;color:#e4e8f0;font-weight:500;border-right:1px solid #1e2738;">4.00</td><td style="padding:6px 4px;text-align:center;color:#e4e8f0;font-weight:500;border-right:1px solid #1e2738;">4.00</td><td style="padding:6px 4px;text-align:center;color:#e4e8f0;font-weight:500;border-right:1px solid #1e2738;">2.00</td><td style="padding:6px 4px;text-align:center;color:#e4e8f0;font-weight:500;border-right:1px solid var(--color-border);">2.00</td>
+              <td style="padding:6px 4px;text-align:center;font-weight:700;color:#f59e0b;border-right:1px solid var(--color-border);">32.00</td><td style="padding:6px 4px;text-align:center;color:#5a6375;font-size:11px;">계획</td>
+            </tr>
+            <tr style="border-bottom:1px solid var(--color-border);background:rgba(79,124,255,0.03);">
+              <td style="padding:6px 4px;text-align:center;color:#22c55e;font-weight:500;border-right:1px solid #1e2738;">2.00</td><td style="padding:6px 4px;text-align:center;color:#22c55e;font-weight:500;border-right:1px solid #1e2738;">2.00</td><td style="padding:6px 4px;text-align:center;color:#ef4444;font-weight:500;border-right:1px solid #1e2738;">3.50</td><td style="padding:6px 4px;text-align:center;color:#5a6375;border-right:1px solid #1e2738;">-</td><td style="padding:6px 4px;text-align:center;color:#5a6375;border-right:1px solid #1e2738;">-</td><td style="padding:6px 4px;text-align:center;color:#5a6375;border-right:1px solid #1e2738;">-</td><td style="padding:6px 4px;text-align:center;color:#5a6375;border-right:1px solid #1e2738;">-</td><td style="padding:6px 4px;text-align:center;color:#5a6375;border-right:1px solid #1e2738;">-</td><td style="padding:6px 4px;text-align:center;color:#5a6375;border-right:1px solid #1e2738;">-</td><td style="padding:6px 4px;text-align:center;color:#5a6375;border-right:1px solid var(--color-border);">-</td>
+              <td style="padding:6px 4px;text-align:center;font-weight:700;color:#22c55e;border-right:1px solid var(--color-border);">7.50</td><td style="padding:6px 4px;text-align:center;color:#5a6375;font-size:11px;">실적</td>
+            </tr>
+            <!-- 전체 합계 계획 -->
+            <tr style="background:#1a2540;">
+              <td colspan="4" style="padding:10px 8px;text-align:right;color:#6b91ff;font-weight:700;border-right:1px solid var(--color-border);font-size:13px;">전체 합계 (계획)</td>
+              <td style="padding:8px 4px;text-align:center;font-weight:700;color:#6b91ff;border-right:1px solid #1e2738;">9.00</td><td style="padding:8px 4px;text-align:center;font-weight:700;color:#6b91ff;border-right:1px solid #1e2738;">9.00</td><td style="padding:8px 4px;text-align:center;font-weight:700;color:#6b91ff;border-right:1px solid #1e2738;">13.00</td><td style="padding:8px 4px;text-align:center;font-weight:700;color:#6b91ff;border-right:1px solid #1e2738;">13.00</td><td style="padding:8px 4px;text-align:center;font-weight:700;color:#6b91ff;border-right:1px solid #1e2738;">13.00</td><td style="padding:8px 4px;text-align:center;font-weight:700;color:#6b91ff;border-right:1px solid #1e2738;">13.00</td><td style="padding:8px 4px;text-align:center;font-weight:700;color:#6b91ff;border-right:1px solid #1e2738;">13.00</td><td style="padding:8px 4px;text-align:center;font-weight:700;color:#6b91ff;border-right:1px solid #1e2738;">12.00</td><td style="padding:8px 4px;text-align:center;font-weight:700;color:#6b91ff;border-right:1px solid #1e2738;">10.00</td><td style="padding:8px 4px;text-align:center;font-weight:700;color:#6b91ff;border-right:1px solid var(--color-border);">8.00</td>
+              <td style="padding:8px 4px;text-align:center;font-weight:700;color:#f59e0b;font-size:14px;border-right:1px solid var(--color-border);">112.00</td><td></td>
+            </tr>
+            <tr style="background:#152030;">
+              <td colspan="4" style="padding:10px 8px;text-align:right;color:#22c55e;font-weight:700;border-right:1px solid var(--color-border);font-size:13px;">전체 합계 (실적)</td>
+              <td style="padding:8px 4px;text-align:center;font-weight:700;color:#22c55e;border-right:1px solid #1e2738;">9.00</td><td style="padding:8px 4px;text-align:center;font-weight:700;color:#22c55e;border-right:1px solid #1e2738;">9.00</td><td style="padding:8px 4px;text-align:center;font-weight:700;color:#ef4444;border-right:1px solid #1e2738;">11.80</td><td style="padding:8px 4px;text-align:center;color:#5a6375;border-right:1px solid #1e2738;">-</td><td style="padding:8px 4px;text-align:center;color:#5a6375;border-right:1px solid #1e2738;">-</td><td style="padding:8px 4px;text-align:center;color:#5a6375;border-right:1px solid #1e2738;">-</td><td style="padding:8px 4px;text-align:center;color:#5a6375;border-right:1px solid #1e2738;">-</td><td style="padding:8px 4px;text-align:center;color:#5a6375;border-right:1px solid #1e2738;">-</td><td style="padding:8px 4px;text-align:center;color:#5a6375;border-right:1px solid #1e2738;">-</td><td style="padding:8px 4px;text-align:center;color:#5a6375;border-right:1px solid var(--color-border);">-</td>
+              <td style="padding:8px 4px;text-align:center;font-weight:700;color:#22c55e;font-size:14px;border-right:1px solid var(--color-border);">29.80</td><td></td>
+            </tr>
+          </tbody>
+        </table>
+        </div>
+        <div style="display:flex;gap:20px;margin-top:12px;font-size:12px;">
+          <div style="display:flex;align-items:center;gap:6px;"><span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:#e4e8f0;"></span><span style="color:#8b95a8;">계획 (MM)</span></div>
+          <div style="display:flex;align-items:center;gap:6px;"><span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:#22c55e;"></span><span style="color:#8b95a8;">실적 일치</span></div>
+          <div style="display:flex;align-items:center;gap:6px;"><span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:#ef4444;"></span><span style="color:#8b95a8;">실적 차이 발생</span></div>
+          <div style="display:flex;align-items:center;gap:6px;"><span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:#5a6375;"></span><span style="color:#8b95a8;">미집행</span></div>
+        </div>
+      </div><!-- /섹션3 -->
+
+      <!-- ── 섹션 4: 월별 비용 계획/현황 ── -->
+      <div class="section-card" style="animation-delay:0.2s;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+          <div class="section-title" style="margin-bottom:0;">월별 비용 계획 / 현황</div>
+          <span style="font-size:12px;color:var(--color-text-tertiary);">단위: 만원</span>
+        </div>
+        <div style="overflow-x:auto;border-radius:12px;border:1px solid var(--color-border);">
+        <table style="width:100%;border-collapse:collapse;font-size:12px;min-width:900px;">
+          <colgroup>
+            <col style="width:80px;"><col style="width:60px;"><col style="width:60px;"><col style="width:100px;">
+            <col style="width:60px;" span="10"><col style="width:80px;"><col style="width:64px;">
+          </colgroup>
+          <thead>
+            <tr>
+              <th rowspan="2" style="background:#1c2331;color:#8b95a8;font-weight:600;padding:10px 8px;text-align:center;border-bottom:1px solid var(--color-border);border-right:1px solid var(--color-border);">조직</th>
+              <th rowspan="2" style="background:#1c2331;color:#8b95a8;font-weight:600;padding:10px 8px;text-align:center;border-bottom:1px solid var(--color-border);border-right:1px solid var(--color-border);">소속</th>
+              <th rowspan="2" style="background:#1c2331;color:#8b95a8;font-weight:600;padding:10px 8px;text-align:center;border-bottom:1px solid var(--color-border);border-right:1px solid var(--color-border);">등급</th>
+              <th rowspan="2" style="background:#1c2331;color:#8b95a8;font-weight:600;padding:10px 8px;text-align:center;border-bottom:1px solid var(--color-border);border-right:1px solid var(--color-border);">역할</th>
+              <th colspan="10" style="background:#1a2540;color:#6b91ff;font-weight:700;padding:8px;text-align:center;border-bottom:1px solid var(--color-border);border-right:1px solid var(--color-border);">2026 (만원)</th>
+              <th rowspan="2" style="background:#1c2331;color:#f59e0b;font-weight:700;padding:10px 8px;text-align:center;border-bottom:1px solid var(--color-border);border-right:1px solid var(--color-border);">합계(만원)</th>
+              <th rowspan="2" style="background:#1c2331;color:#8b95a8;font-weight:600;padding:10px 8px;text-align:center;border-bottom:1px solid var(--color-border);">비고</th>
+            </tr>
+            <tr>
+              <th style="background:#141925;color:#8b95a8;font-weight:600;padding:8px 4px;text-align:center;border-bottom:2px solid var(--color-accent);border-right:1px solid var(--color-border);">01</th>
+              <th style="background:#141925;color:#8b95a8;font-weight:600;padding:8px 4px;text-align:center;border-bottom:2px solid var(--color-accent);border-right:1px solid var(--color-border);">02</th>
+              <th style="background:#141925;color:#8b95a8;font-weight:600;padding:8px 4px;text-align:center;border-bottom:2px solid var(--color-accent);border-right:1px solid var(--color-border);">03</th>
+              <th style="background:#141925;color:#8b95a8;font-weight:600;padding:8px 4px;text-align:center;border-bottom:2px solid var(--color-accent);border-right:1px solid var(--color-border);">04</th>
+              <th style="background:#141925;color:#8b95a8;font-weight:600;padding:8px 4px;text-align:center;border-bottom:2px solid var(--color-accent);border-right:1px solid var(--color-border);">05</th>
+              <th style="background:#141925;color:#8b95a8;font-weight:600;padding:8px 4px;text-align:center;border-bottom:2px solid var(--color-accent);border-right:1px solid var(--color-border);">06</th>
+              <th style="background:#141925;color:#8b95a8;font-weight:600;padding:8px 4px;text-align:center;border-bottom:2px solid var(--color-accent);border-right:1px solid var(--color-border);">07</th>
+              <th style="background:#141925;color:#8b95a8;font-weight:600;padding:8px 4px;text-align:center;border-bottom:2px solid var(--color-accent);border-right:1px solid var(--color-border);">08</th>
+              <th style="background:#141925;color:#8b95a8;font-weight:600;padding:8px 4px;text-align:center;border-bottom:2px solid var(--color-accent);border-right:1px solid var(--color-border);">09</th>
+              <th style="background:#141925;color:#8b95a8;font-weight:600;padding:8px 4px;text-align:center;border-bottom:2px solid var(--color-accent);border-right:1px solid var(--color-border);">10</th>
+            </tr>
+          </thead>
+          <tbody>
+            <!-- 특급 PM/PL -->
+            <tr style="border-bottom:1px solid #1e2738;">
+              <td rowspan="2" style="padding:8px;text-align:center;color:#c8d0e0;border-right:1px solid var(--color-border);background:#141925;font-weight:500;">SI사업 2팀</td>
+              <td rowspan="2" style="padding:8px;text-align:center;color:#8b95a8;border-right:1px solid var(--color-border);">당사</td>
+              <td rowspan="2" style="padding:8px;text-align:center;border-right:1px solid var(--color-border);"><span style="background:rgba(79,124,255,0.15);color:#6b91ff;padding:2px 7px;border-radius:4px;font-weight:600;font-size:11px;">특급</span></td>
+              <td rowspan="2" style="padding:8px;text-align:center;color:#c8d0e0;border-right:1px solid var(--color-border);">PM/PL</td>
+              <td style="padding:6px;text-align:right;color:#e4e8f0;font-weight:500;border-right:1px solid #1e2738;">900</td><td style="padding:6px;text-align:right;color:#e4e8f0;font-weight:500;border-right:1px solid #1e2738;">900</td><td style="padding:6px;text-align:right;color:#e4e8f0;font-weight:500;border-right:1px solid #1e2738;">900</td><td style="padding:6px;text-align:right;color:#e4e8f0;font-weight:500;border-right:1px solid #1e2738;">900</td><td style="padding:6px;text-align:right;color:#e4e8f0;font-weight:500;border-right:1px solid #1e2738;">900</td><td style="padding:6px;text-align:right;color:#e4e8f0;font-weight:500;border-right:1px solid #1e2738;">900</td><td style="padding:6px;text-align:right;color:#e4e8f0;font-weight:500;border-right:1px solid #1e2738;">900</td><td style="padding:6px;text-align:right;color:#e4e8f0;font-weight:500;border-right:1px solid #1e2738;">900</td><td style="padding:6px;text-align:right;color:#e4e8f0;font-weight:500;border-right:1px solid #1e2738;">900</td><td style="padding:6px;text-align:right;color:#e4e8f0;font-weight:500;border-right:1px solid var(--color-border);">900</td>
+              <td style="padding:6px 8px;text-align:right;font-weight:700;color:#f59e0b;border-right:1px solid var(--color-border);">9,000</td><td style="padding:6px 4px;text-align:center;color:#5a6375;font-size:11px;">계획</td>
+            </tr>
+            <tr style="border-bottom:1px solid var(--color-border);background:rgba(79,124,255,0.03);">
+              <td style="padding:6px;text-align:right;color:#22c55e;font-weight:500;border-right:1px solid #1e2738;">920</td><td style="padding:6px;text-align:right;color:#22c55e;font-weight:500;border-right:1px solid #1e2738;">920</td><td style="padding:6px;text-align:right;color:#ef4444;font-weight:500;border-right:1px solid #1e2738;">736</td><td style="padding:6px;text-align:center;color:#5a6375;border-right:1px solid #1e2738;">-</td><td style="padding:6px;text-align:center;color:#5a6375;border-right:1px solid #1e2738;">-</td><td style="padding:6px;text-align:center;color:#5a6375;border-right:1px solid #1e2738;">-</td><td style="padding:6px;text-align:center;color:#5a6375;border-right:1px solid #1e2738;">-</td><td style="padding:6px;text-align:center;color:#5a6375;border-right:1px solid #1e2738;">-</td><td style="padding:6px;text-align:center;color:#5a6375;border-right:1px solid #1e2738;">-</td><td style="padding:6px;text-align:center;color:#5a6375;border-right:1px solid var(--color-border);">-</td>
+              <td style="padding:6px 8px;text-align:right;font-weight:700;color:#22c55e;border-right:1px solid var(--color-border);">2,576</td><td style="padding:6px 4px;text-align:center;color:#5a6375;font-size:11px;">실적</td>
+            </tr>
+            <!-- 고급 사업관리 -->
+            <tr style="border-bottom:1px solid #1e2738;">
+              <td rowspan="2" style="padding:8px;text-align:center;color:#c8d0e0;border-right:1px solid var(--color-border);background:#141925;font-weight:500;">SI사업 2팀</td>
+              <td rowspan="2" style="padding:8px;text-align:center;color:#8b95a8;border-right:1px solid var(--color-border);">당사</td>
+              <td rowspan="2" style="padding:8px;text-align:center;border-right:1px solid var(--color-border);"><span style="background:rgba(168,85,247,0.15);color:#a855f7;padding:2px 7px;border-radius:4px;font-weight:600;font-size:11px;">고급</span></td>
+              <td rowspan="2" style="padding:8px;text-align:center;color:#c8d0e0;border-right:1px solid var(--color-border);">사업관리</td>
+              <td style="padding:6px;text-align:right;color:#e4e8f0;font-weight:500;border-right:1px solid #1e2738;">750</td><td style="padding:6px;text-align:right;color:#e4e8f0;font-weight:500;border-right:1px solid #1e2738;">750</td><td style="padding:6px;text-align:right;color:#e4e8f0;font-weight:500;border-right:1px solid #1e2738;">750</td><td style="padding:6px;text-align:right;color:#e4e8f0;font-weight:500;border-right:1px solid #1e2738;">750</td><td style="padding:6px;text-align:right;color:#e4e8f0;font-weight:500;border-right:1px solid #1e2738;">750</td><td style="padding:6px;text-align:right;color:#e4e8f0;font-weight:500;border-right:1px solid #1e2738;">750</td><td style="padding:6px;text-align:right;color:#e4e8f0;font-weight:500;border-right:1px solid #1e2738;">750</td><td style="padding:6px;text-align:right;color:#e4e8f0;font-weight:500;border-right:1px solid #1e2738;">750</td><td style="padding:6px;text-align:right;color:#e4e8f0;font-weight:500;border-right:1px solid #1e2738;">750</td><td style="padding:6px;text-align:right;color:#e4e8f0;font-weight:500;border-right:1px solid var(--color-border);">750</td>
+              <td style="padding:6px 8px;text-align:right;font-weight:700;color:#f59e0b;border-right:1px solid var(--color-border);">7,500</td><td style="padding:6px 4px;text-align:center;color:#5a6375;font-size:11px;">계획</td>
+            </tr>
+            <tr style="border-bottom:1px solid var(--color-border);background:rgba(79,124,255,0.03);">
+              <td style="padding:6px;text-align:right;color:#22c55e;font-weight:500;border-right:1px solid #1e2738;">780</td><td style="padding:6px;text-align:right;color:#22c55e;font-weight:500;border-right:1px solid #1e2738;">780</td><td style="padding:6px;text-align:right;color:#22c55e;font-weight:500;border-right:1px solid #1e2738;">780</td><td style="padding:6px;text-align:center;color:#5a6375;border-right:1px solid #1e2738;">-</td><td style="padding:6px;text-align:center;color:#5a6375;border-right:1px solid #1e2738;">-</td><td style="padding:6px;text-align:center;color:#5a6375;border-right:1px solid #1e2738;">-</td><td style="padding:6px;text-align:center;color:#5a6375;border-right:1px solid #1e2738;">-</td><td style="padding:6px;text-align:center;color:#5a6375;border-right:1px solid #1e2738;">-</td><td style="padding:6px;text-align:center;color:#5a6375;border-right:1px solid #1e2738;">-</td><td style="padding:6px;text-align:center;color:#5a6375;border-right:1px solid var(--color-border);">-</td>
+              <td style="padding:6px 8px;text-align:right;font-weight:700;color:#22c55e;border-right:1px solid var(--color-border);">2,340</td><td style="padding:6px 4px;text-align:center;color:#5a6375;font-size:11px;">실적</td>
+            </tr>
+            <!-- 고급 업무분석/설계 -->
+            <tr style="border-bottom:1px solid #1e2738;">
+              <td rowspan="2" style="padding:8px;text-align:center;color:#c8d0e0;border-right:1px solid var(--color-border);background:#141925;font-weight:500;">SI사업 2팀</td>
+              <td rowspan="2" style="padding:8px;text-align:center;color:#8b95a8;border-right:1px solid var(--color-border);">외주</td>
+              <td rowspan="2" style="padding:8px;text-align:center;border-right:1px solid var(--color-border);"><span style="background:rgba(168,85,247,0.15);color:#a855f7;padding:2px 7px;border-radius:4px;font-weight:600;font-size:11px;">고급</span></td>
+              <td rowspan="2" style="padding:8px;text-align:center;color:#c8d0e0;border-right:1px solid var(--color-border);">업무분석/설계</td>
+              <td style="padding:6px;text-align:right;color:#e4e8f0;font-weight:500;border-right:1px solid #1e2738;">2,250</td><td style="padding:6px;text-align:right;color:#e4e8f0;font-weight:500;border-right:1px solid #1e2738;">2,250</td><td style="padding:6px;text-align:right;color:#e4e8f0;font-weight:500;border-right:1px solid #1e2738;">2,250</td><td style="padding:6px;text-align:right;color:#e4e8f0;font-weight:500;border-right:1px solid #1e2738;">2,250</td><td style="padding:6px;text-align:right;color:#e4e8f0;font-weight:500;border-right:1px solid #1e2738;">2,250</td><td style="padding:6px;text-align:right;color:#e4e8f0;font-weight:500;border-right:1px solid #1e2738;">2,250</td><td style="padding:6px;text-align:right;color:#e4e8f0;font-weight:500;border-right:1px solid #1e2738;">2,250</td><td style="padding:6px;text-align:right;color:#e4e8f0;font-weight:500;border-right:1px solid #1e2738;">1,500</td><td style="padding:6px;text-align:right;color:#e4e8f0;font-weight:500;border-right:1px solid #1e2738;">1,500</td><td style="padding:6px;text-align:right;color:#e4e8f0;font-weight:500;border-right:1px solid var(--color-border);">1,500</td>
+              <td style="padding:6px 8px;text-align:right;font-weight:700;color:#f59e0b;border-right:1px solid var(--color-border);">21,000</td><td style="padding:6px 4px;text-align:center;color:#5a6375;font-size:11px;">계획</td>
+            </tr>
+            <tr style="border-bottom:1px solid var(--color-border);background:rgba(79,124,255,0.03);">
+              <td style="padding:6px;text-align:right;color:#22c55e;font-weight:500;border-right:1px solid #1e2738;">2,340</td><td style="padding:6px;text-align:right;color:#22c55e;font-weight:500;border-right:1px solid #1e2738;">2,340</td><td style="padding:6px;text-align:right;color:#ef4444;font-weight:500;border-right:1px solid #1e2738;">1,950</td><td style="padding:6px;text-align:center;color:#5a6375;border-right:1px solid #1e2738;">-</td><td style="padding:6px;text-align:center;color:#5a6375;border-right:1px solid #1e2738;">-</td><td style="padding:6px;text-align:center;color:#5a6375;border-right:1px solid #1e2738;">-</td><td style="padding:6px;text-align:center;color:#5a6375;border-right:1px solid #1e2738;">-</td><td style="padding:6px;text-align:center;color:#5a6375;border-right:1px solid #1e2738;">-</td><td style="padding:6px;text-align:center;color:#5a6375;border-right:1px solid #1e2738;">-</td><td style="padding:6px;text-align:center;color:#5a6375;border-right:1px solid var(--color-border);">-</td>
+              <td style="padding:6px 8px;text-align:right;font-weight:700;color:#22c55e;border-right:1px solid var(--color-border);">6,630</td><td style="padding:6px 4px;text-align:center;color:#5a6375;font-size:11px;">실적</td>
+            </tr>
+            <!-- 중급 개발 -->
+            <tr style="border-bottom:1px solid #1e2738;">
+              <td rowspan="2" style="padding:8px;text-align:center;color:#c8d0e0;border-right:1px solid var(--color-border);background:#141925;font-weight:500;">SI사업 2팀</td>
+              <td rowspan="2" style="padding:8px;text-align:center;color:#8b95a8;border-right:1px solid var(--color-border);">외주</td>
+              <td rowspan="2" style="padding:8px;text-align:center;border-right:1px solid var(--color-border);"><span style="background:rgba(34,197,94,0.15);color:#22c55e;padding:2px 7px;border-radius:4px;font-weight:600;font-size:11px;">중급</span></td>
+              <td rowspan="2" style="padding:8px;text-align:center;color:#c8d0e0;border-right:1px solid var(--color-border);">개발</td>
+              <td style="padding:6px;text-align:right;color:#e4e8f0;font-weight:500;border-right:1px solid #1e2738;">1,100</td><td style="padding:6px;text-align:right;color:#e4e8f0;font-weight:500;border-right:1px solid #1e2738;">1,100</td><td style="padding:6px;text-align:right;color:#e4e8f0;font-weight:500;border-right:1px solid #1e2738;">2,200</td><td style="padding:6px;text-align:right;color:#e4e8f0;font-weight:500;border-right:1px solid #1e2738;">2,200</td><td style="padding:6px;text-align:right;color:#e4e8f0;font-weight:500;border-right:1px solid #1e2738;">2,200</td><td style="padding:6px;text-align:right;color:#e4e8f0;font-weight:500;border-right:1px solid #1e2738;">2,200</td><td style="padding:6px;text-align:right;color:#e4e8f0;font-weight:500;border-right:1px solid #1e2738;">2,200</td><td style="padding:6px;text-align:right;color:#e4e8f0;font-weight:500;border-right:1px solid #1e2738;">2,200</td><td style="padding:6px;text-align:right;color:#e4e8f0;font-weight:500;border-right:1px solid #1e2738;">1,100</td><td style="padding:6px;text-align:right;color:#e4e8f0;font-weight:500;border-right:1px solid var(--color-border);">1,100</td>
+              <td style="padding:6px 8px;text-align:right;font-weight:700;color:#f59e0b;border-right:1px solid var(--color-border);">17,600</td><td style="padding:6px 4px;text-align:center;color:#5a6375;font-size:11px;">계획</td>
+            </tr>
+            <tr style="border-bottom:1px solid var(--color-border);background:rgba(79,124,255,0.03);">
+              <td style="padding:6px;text-align:right;color:#22c55e;font-weight:500;border-right:1px solid #1e2738;">1,120</td><td style="padding:6px;text-align:right;color:#22c55e;font-weight:500;border-right:1px solid #1e2738;">1,120</td><td style="padding:6px;text-align:right;color:#22c55e;font-weight:500;border-right:1px solid #1e2738;">2,240</td><td style="padding:6px;text-align:center;color:#5a6375;border-right:1px solid #1e2738;">-</td><td style="padding:6px;text-align:center;color:#5a6375;border-right:1px solid #1e2738;">-</td><td style="padding:6px;text-align:center;color:#5a6375;border-right:1px solid #1e2738;">-</td><td style="padding:6px;text-align:center;color:#5a6375;border-right:1px solid #1e2738;">-</td><td style="padding:6px;text-align:center;color:#5a6375;border-right:1px solid #1e2738;">-</td><td style="padding:6px;text-align:center;color:#5a6375;border-right:1px solid #1e2738;">-</td><td style="padding:6px;text-align:center;color:#5a6375;border-right:1px solid var(--color-border);">-</td>
+              <td style="padding:6px 8px;text-align:right;font-weight:700;color:#22c55e;border-right:1px solid var(--color-border);">4,480</td><td style="padding:6px 4px;text-align:center;color:#5a6375;font-size:11px;">실적</td>
+            </tr>
+            <!-- 초급 개발 -->
+            <tr style="border-bottom:1px solid #1e2738;">
+              <td rowspan="2" style="padding:8px;text-align:center;color:#c8d0e0;border-right:1px solid var(--color-border);background:#141925;font-weight:500;">SI사업 2팀</td>
+              <td rowspan="2" style="padding:8px;text-align:center;color:#8b95a8;border-right:1px solid var(--color-border);">외주</td>
+              <td rowspan="2" style="padding:8px;text-align:center;border-right:1px solid var(--color-border);"><span style="background:rgba(245,158,11,0.15);color:#f59e0b;padding:2px 7px;border-radius:4px;font-weight:600;font-size:11px;">초급</span></td>
+              <td rowspan="2" style="padding:8px;text-align:center;color:#c8d0e0;border-right:1px solid var(--color-border);">개발</td>
+              <td style="padding:6px;text-align:right;color:#e4e8f0;font-weight:500;border-right:1px solid #1e2738;">800</td><td style="padding:6px;text-align:right;color:#e4e8f0;font-weight:500;border-right:1px solid #1e2738;">800</td><td style="padding:6px;text-align:right;color:#e4e8f0;font-weight:500;border-right:1px solid #1e2738;">1,600</td><td style="padding:6px;text-align:right;color:#e4e8f0;font-weight:500;border-right:1px solid #1e2738;">1,600</td><td style="padding:6px;text-align:right;color:#e4e8f0;font-weight:500;border-right:1px solid #1e2738;">1,600</td><td style="padding:6px;text-align:right;color:#e4e8f0;font-weight:500;border-right:1px solid #1e2738;">1,600</td><td style="padding:6px;text-align:right;color:#e4e8f0;font-weight:500;border-right:1px solid #1e2738;">1,600</td><td style="padding:6px;text-align:right;color:#e4e8f0;font-weight:500;border-right:1px solid #1e2738;">1,600</td><td style="padding:6px;text-align:right;color:#e4e8f0;font-weight:500;border-right:1px solid #1e2738;">800</td><td style="padding:6px;text-align:right;color:#e4e8f0;font-weight:500;border-right:1px solid var(--color-border);">800</td>
+              <td style="padding:6px 8px;text-align:right;font-weight:700;color:#f59e0b;border-right:1px solid var(--color-border);">12,800</td><td style="padding:6px 4px;text-align:center;color:#5a6375;font-size:11px;">계획</td>
+            </tr>
+            <tr style="border-bottom:1px solid var(--color-border);background:rgba(79,124,255,0.03);">
+              <td style="padding:6px;text-align:right;color:#22c55e;font-weight:500;border-right:1px solid #1e2738;">820</td><td style="padding:6px;text-align:right;color:#22c55e;font-weight:500;border-right:1px solid #1e2738;">820</td><td style="padding:6px;text-align:right;color:#ef4444;font-weight:500;border-right:1px solid #1e2738;">1,435</td><td style="padding:6px;text-align:center;color:#5a6375;border-right:1px solid #1e2738;">-</td><td style="padding:6px;text-align:center;color:#5a6375;border-right:1px solid #1e2738;">-</td><td style="padding:6px;text-align:center;color:#5a6375;border-right:1px solid #1e2738;">-</td><td style="padding:6px;text-align:center;color:#5a6375;border-right:1px solid #1e2738;">-</td><td style="padding:6px;text-align:center;color:#5a6375;border-right:1px solid #1e2738;">-</td><td style="padding:6px;text-align:center;color:#5a6375;border-right:1px solid #1e2738;">-</td><td style="padding:6px;text-align:center;color:#5a6375;border-right:1px solid var(--color-border);">-</td>
+              <td style="padding:6px 8px;text-align:right;font-weight:700;color:#22c55e;border-right:1px solid var(--color-border);">3,075</td><td style="padding:6px 4px;text-align:center;color:#5a6375;font-size:11px;">실적</td>
+            </tr>
+            <!-- 전체 합계 계획 -->
+            <tr style="background:#1a2540;">
+              <td colspan="4" style="padding:10px 8px;text-align:right;color:#6b91ff;font-weight:700;border-right:1px solid var(--color-border);font-size:13px;">전체 합계 (계획)</td>
+              <td style="padding:8px 6px;text-align:right;font-weight:700;color:#6b91ff;border-right:1px solid #1e2738;">5,800</td><td style="padding:8px 6px;text-align:right;font-weight:700;color:#6b91ff;border-right:1px solid #1e2738;">5,800</td><td style="padding:8px 6px;text-align:right;font-weight:700;color:#6b91ff;border-right:1px solid #1e2738;">7,700</td><td style="padding:8px 6px;text-align:right;font-weight:700;color:#6b91ff;border-right:1px solid #1e2738;">7,700</td><td style="padding:8px 6px;text-align:right;font-weight:700;color:#6b91ff;border-right:1px solid #1e2738;">7,700</td><td style="padding:8px 6px;text-align:right;font-weight:700;color:#6b91ff;border-right:1px solid #1e2738;">7,700</td><td style="padding:8px 6px;text-align:right;font-weight:700;color:#6b91ff;border-right:1px solid #1e2738;">7,700</td><td style="padding:8px 6px;text-align:right;font-weight:700;color:#6b91ff;border-right:1px solid #1e2738;">6,950</td><td style="padding:8px 6px;text-align:right;font-weight:700;color:#6b91ff;border-right:1px solid #1e2738;">5,050</td><td style="padding:8px 6px;text-align:right;font-weight:700;color:#6b91ff;border-right:1px solid var(--color-border);">5,050</td>
+              <td style="padding:8px 8px;text-align:right;font-weight:700;color:#f59e0b;font-size:14px;border-right:1px solid var(--color-border);">67,900</td><td></td>
+            </tr>
+            <tr style="background:#152030;">
+              <td colspan="4" style="padding:10px 8px;text-align:right;color:#22c55e;font-weight:700;border-right:1px solid var(--color-border);font-size:13px;">전체 합계 (실적)</td>
+              <td style="padding:8px 6px;text-align:right;font-weight:700;color:#22c55e;border-right:1px solid #1e2738;">5,980</td><td style="padding:8px 6px;text-align:right;font-weight:700;color:#22c55e;border-right:1px solid #1e2738;">5,980</td><td style="padding:8px 6px;text-align:right;font-weight:700;color:#ef4444;border-right:1px solid #1e2738;">7,141</td><td style="padding:8px 6px;text-align:center;color:#5a6375;border-right:1px solid #1e2738;">-</td><td style="padding:8px 6px;text-align:center;color:#5a6375;border-right:1px solid #1e2738;">-</td><td style="padding:8px 6px;text-align:center;color:#5a6375;border-right:1px solid #1e2738;">-</td><td style="padding:8px 6px;text-align:center;color:#5a6375;border-right:1px solid #1e2738;">-</td><td style="padding:8px 6px;text-align:center;color:#5a6375;border-right:1px solid #1e2738;">-</td><td style="padding:8px 6px;text-align:center;color:#5a6375;border-right:1px solid #1e2738;">-</td><td style="padding:8px 6px;text-align:center;color:#5a6375;border-right:1px solid var(--color-border);">-</td>
+              <td style="padding:8px 8px;text-align:right;font-weight:700;color:#22c55e;font-size:14px;border-right:1px solid var(--color-border);">19,101</td><td></td>
+            </tr>
+          </tbody>
+        </table>
+        </div>
+        <!-- 단가 범례 -->
+        <div style="display:flex;gap:20px;margin-top:12px;font-size:12px;flex-wrap:wrap;align-items:center;">
+          <span style="color:#8b95a8;font-weight:600;">계획 단가</span>
+          <div style="display:flex;align-items:center;gap:6px;"><span style="background:rgba(79,124,255,0.15);color:#6b91ff;padding:1px 8px;border-radius:4px;font-weight:600;font-size:11px;">특급</span><span style="color:#8b95a8;">900만원/MM</span></div>
+          <div style="display:flex;align-items:center;gap:6px;"><span style="background:rgba(168,85,247,0.15);color:#a855f7;padding:1px 8px;border-radius:4px;font-weight:600;font-size:11px;">고급</span><span style="color:#8b95a8;">750만원/MM</span></div>
+          <div style="display:flex;align-items:center;gap:6px;"><span style="background:rgba(34,197,94,0.15);color:#22c55e;padding:1px 8px;border-radius:4px;font-weight:600;font-size:11px;">중급</span><span style="color:#8b95a8;">550만원/MM</span></div>
+          <div style="display:flex;align-items:center;gap:6px;"><span style="background:rgba(245,158,11,0.15);color:#f59e0b;padding:1px 8px;border-radius:4px;font-weight:600;font-size:11px;">초급</span><span style="color:#8b95a8;">400만원/MM</span></div>
+          <div style="width:1px;height:16px;background:var(--color-border);"></div>
+          <span style="color:#8b95a8;font-weight:600;">실적 단가</span>
+          <div style="display:flex;align-items:center;gap:6px;"><span style="background:rgba(79,124,255,0.15);color:#6b91ff;padding:1px 8px;border-radius:4px;font-weight:600;font-size:11px;">특급</span><span style="color:#8b95a8;">920만원/MM</span></div>
+          <div style="display:flex;align-items:center;gap:6px;"><span style="background:rgba(168,85,247,0.15);color:#a855f7;padding:1px 8px;border-radius:4px;font-weight:600;font-size:11px;">고급</span><span style="color:#8b95a8;">780만원/MM</span></div>
+          <div style="display:flex;align-items:center;gap:6px;"><span style="background:rgba(34,197,94,0.15);color:#22c55e;padding:1px 8px;border-radius:4px;font-weight:600;font-size:11px;">중급</span><span style="color:#8b95a8;">560만원/MM</span></div>
+          <div style="display:flex;align-items:center;gap:6px;"><span style="background:rgba(245,158,11,0.15);color:#f59e0b;padding:1px 8px;border-radius:4px;font-weight:600;font-size:11px;">초급</span><span style="color:#8b95a8;">410만원/MM</span></div>
+        </div>
+        <div style="margin-top:10px;padding:10px 16px;background:rgba(79,124,255,0.05);border:1px solid rgba(79,124,255,0.2);border-radius:8px;font-size:12px;color:#5a6375;">
+          ※ 총 계획 예산: <span style="color:#f59e0b;font-weight:700;">6억 7,900만원</span> &nbsp;|&nbsp; 실적 집행: <span style="color:#22c55e;font-weight:700;">1억 9,101만원</span> &nbsp;|&nbsp; 집행률: <span style="color:#6b91ff;font-weight:700;">28.1%</span> &nbsp;|&nbsp; 단가 차이로 인한 비용 증가: <span style="color:#ef4444;font-weight:700;">+556만원</span>
+        </div>
+      </div><!-- /섹션4 -->
+
+    </div><!-- /content-area -->
+  </main>
+</div><!-- /container -->
+
+<script>
+// ── 데이터 로딩: localStorage → DOM ──────────────────────────────
+function loadProjectData() {
+  var raw = localStorage.getItem('pgDetailData');
+  if (!raw) return;
+  var data;
+  try { data = JSON.parse(raw); } catch(e) { return; }
+
+  // ── 섹션1: 요약 ────────────────────────────────────────────────
+  var s = data['프로젝트_진행_상황_요약'];
+  if (s) {
+    var set = function(id, val) {
+      var el = document.getElementById(id);
+      if (el && val) el.textContent = val;
+    };
+
+    set('pg-title',        s['프로젝트명']);
+    set('pg-client',       s['고객사명']);
+    set('pg-elapsed',      s['경과_일수']);
+    set('pg-remain',       s['남은_일수']);
+    set('pg-manager-name', s['담당자']);
+
+    // 아바타 첫 글자
+    var av = document.getElementById('pg-manager-avatar');
+    if (av && s['담당자']) av.textContent = s['담당자'].charAt(0);
+
+    // 계약기간
+    var st = (s['계약_시작일'] || '').replace(/-/g, '.');
+    var en = (s['계약_종료일'] || '').replace(/-/g, '.');
+    if (st || en) set('pg-period', st + ' ~ ' + en);
+
+    // 우선순위 뱃지
+    var pri = document.getElementById('pg-priority');
+    if (pri && s['우선순위']) {
+      pri.textContent = s['우선순위'];
+      pri.className = 'priority-badge priority-' + s['우선순위'].toLowerCase();
+    }
+
+    // 진행률
+    var pct = parseInt(s['전체_진행률']) || 0;
+    set('pg-progress-text', pct + '%');
+    var bar = document.getElementById('pg-progress-bar');
+    if (bar) bar.style.width = pct + '%';
+  }
+
+  // ── 섹션2: 마일스톤 ────────────────────────────────────────────
+  var milestones = data['마일스톤_진행현황'] || [];
+  var container  = document.getElementById('pg-milestones');
+  if (!container || milestones.length === 0) return;
+
+  var html = milestones.map(function(ms, i) {
+    var isLast = (i === milestones.length - 1);
+    var status = ms['상태'] || '대기';
+    var tasks  = (ms['작업_내용'] || []).filter(function(t) { return t && t.trim(); });
+    var taskHtml = tasks.map(function(t) { return '• ' + t; }).join('<br>');
+    var st2 = (ms['시작일'] || '').replace(/-/g, '.');
+    var en2 = (ms['종료일'] || '').replace(/-/g, '.');
+
+    // 상태별 스타일 값
+    var dotHtml, cardBorder, cardExtra = '', badgeBg, badgeColor, textColor, opacity = '';
+
+    if (status === '완료') {
+      dotHtml = '<div style="position:absolute;left:-32px;top:4px;width:24px;height:24px;border-radius:50%;'
+        + 'background:var(--color-success);border:3px solid var(--color-surface);'
+        + 'display:flex;align-items:center;justify-content:center;z-index:1;">'
+        + '<svg width="12" height="12" fill="none" stroke="white" viewBox="0 0 24 24">'
+        + '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/>'
+        + '</svg></div>';
+      cardBorder = 'var(--color-border)';
+      badgeBg = 'rgba(34,197,94,0.15)'; badgeColor = 'var(--color-success)';
+      textColor = 'var(--color-text-secondary)';
+
+    } else if (status === '진행중') {
+      dotHtml = '<div style="position:absolute;left:-32px;top:4px;width:24px;height:24px;border-radius:50%;'
+        + 'background:var(--color-accent);border:3px solid var(--color-surface);'
+        + 'display:flex;align-items:center;justify-content:center;z-index:1;'
+        + 'box-shadow:0 0 0 4px rgba(79,124,255,0.2);">'
+        + '<div style="width:8px;height:8px;border-radius:50%;background:white;"></div></div>';
+      cardBorder = 'var(--color-accent)';
+      cardExtra  = 'box-shadow:0 0 0 1px rgba(79,124,255,0.1);';
+      badgeBg = 'rgba(79,124,255,0.15)'; badgeColor = 'var(--color-accent)';
+      textColor = 'var(--color-text-secondary)';
+
+    } else { // 대기
+      dotHtml = '<div style="position:absolute;left:-32px;top:4px;width:24px;height:24px;border-radius:50%;'
+        + 'background:var(--color-surface-elevated);border:2px solid var(--color-border);z-index:1;"></div>';
+      cardBorder = 'var(--color-border)';
+      opacity    = 'opacity:0.7;';
+      badgeBg = 'rgba(90,99,117,0.15)'; badgeColor = 'var(--color-text-tertiary)';
+      textColor = 'var(--color-text-tertiary)';
+    }
+
+    // 단계 진행률 (진행중만)
+    var progHtml = '';
+    if (status === '진행중' && ms['단계_진행률']) {
+      var p = ms['단계_진행률'];
+      progHtml = '<div style="margin-top:12px;">'
+        + '<div style="display:flex;justify-content:space-between;margin-bottom:6px;">'
+        + '<span style="font-size:12px;color:var(--color-text-tertiary);">단계 진행률</span>'
+        + '<span style="font-size:12px;font-weight:600;color:var(--color-accent);">' + p + '</span>'
+        + '</div>'
+        + '<div style="height:6px;background:var(--color-border);border-radius:3px;overflow:hidden;">'
+        + '<div style="height:100%;width:' + p + ';background:var(--color-accent);border-radius:3px;"></div>'
+        + '</div></div>';
+    }
+
+    return '<div style="position:relative;margin-bottom:' + (isLast ? '0' : '28px') + ';">'
+      + dotHtml
+      + '<div style="background:var(--color-surface-elevated);border:1px solid ' + cardBorder + ';'
+      + 'border-radius:10px;padding:16px;' + opacity + cardExtra + '">'
+      + '<div style="display:flex;justify-content:space-between;align-items:start;margin-bottom:8px;">'
+      + '<div>'
+      + '<div style="font-size:15px;font-weight:600;margin-bottom:4px;">'
+      + ms['단계_번호'] + '단계: ' + (ms['단계명'] || '') + '</div>'
+      + '<div style="font-size:13px;color:var(--color-text-tertiary);">' + st2 + ' ~ ' + en2 + '</div>'
+      + '</div>'
+      + '<span style="font-size:12px;padding:4px 10px;border-radius:6px;'
+      + 'background:' + badgeBg + ';color:' + badgeColor + ';font-weight:600;">' + status + '</span>'
+      + '</div>'
+      + '<div style="font-size:13px;color:' + textColor + ';">' + taskHtml + '</div>'
+      + progHtml
+      + '</div></div>';
+  }).join('');
+
+  // 수직 연결선 유지 + 동적 마일스톤 삽입
+  container.innerHTML =
+    '<div style="position:absolute;left:11px;top:24px;bottom:24px;width:2px;background:var(--color-border);"></div>'
+    + html;
+}
+
+// ── 갱신 버튼 ─────────────────────────────────────────────────────
+function refreshData() {
+  loadProjectData();
+  var btn = document.getElementById('refresh-btn');
+  btn.textContent = '✓ 갱신 완료';
+  btn.style.background = 'rgba(34,197,94,0.25)';
+  setTimeout(function() {
+    btn.textContent = '↻ 갱신';
+    btn.style.background = 'rgba(34,197,94,0.12)';
+  }, 1500);
+}
+
+// ── 페이지 로드 시 실행 ───────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', loadProjectData);
+</script>
+</body>
+</html>

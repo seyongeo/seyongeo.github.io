@@ -1,0 +1,502 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>프로젝트 진행 상황 입력</title>
+<style>
+  :root {
+    --bg: #0a0e1a;
+    --surface: #141925;
+    --surface-el: #1c2331;
+    --border: #252d3f;
+    --text: #e4e8f0;
+    --text-sec: #8b95a8;
+    --text-ter: #5a6375;
+    --accent: #4f7cff;
+    --accent-l: #6b91ff;
+    --success: #22c55e;
+    --warning: #f59e0b;
+    --danger: #ef4444;
+    --purple: #a855f7;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body {
+    font-family: 'Instrument Sans', -apple-system, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    font-size: 14px;
+    line-height: 1.6;
+    min-height: 100vh;
+  }
+  body::before {
+    content:''; position:fixed; top:-50%; right:-20%;
+    width:700px; height:700px;
+    background:radial-gradient(circle, rgba(79,124,255,0.12) 0%, transparent 70%);
+    border-radius:50%; pointer-events:none; z-index:0;
+  }
+
+  /* ── Header ── */
+  .header {
+    position: sticky; top: 0; z-index: 100;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 16px 32px;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .header-title { font-size: 18px; font-weight: 700; display:flex; align-items:center; gap:10px; }
+  .header-title span {
+    width:32px; height:32px; border-radius:8px;
+    background: linear-gradient(135deg, var(--accent), var(--purple));
+    display:flex; align-items:center; justify-content:center; font-size:15px;
+  }
+  .header-actions { display:flex; gap:10px; }
+
+  /* ── Buttons ── */
+  button {
+    font-family: inherit; font-size: 13px; font-weight: 600;
+    border: none; border-radius: 8px; padding: 9px 18px;
+    cursor: pointer; transition: all 0.2s;
+  }
+  .btn-primary { background: var(--accent); color: #fff; box-shadow: 0 4px 12px rgba(79,124,255,0.3); }
+  .btn-primary:hover { background: var(--accent-l); transform: translateY(-1px); }
+  .btn-secondary { background: var(--surface-el); color: var(--text); border: 1px solid var(--border); }
+  .btn-secondary:hover { background: var(--border); }
+  .btn-danger { background: rgba(239,68,68,0.15); color: var(--danger); border: 1px solid rgba(239,68,68,0.3); padding: 5px 12px; font-size: 12px; }
+  .btn-danger:hover { background: rgba(239,68,68,0.25); }
+  .btn-add { background: rgba(79,124,255,0.12); color: var(--accent-l); border: 1px dashed rgba(79,124,255,0.4); width:100%; padding:10px; border-radius:8px; font-size:13px; }
+  .btn-add:hover { background: rgba(79,124,255,0.2); }
+
+  /* ── Layout ── */
+  .page { position:relative; z-index:1; display:grid; grid-template-columns: 1fr 380px; gap:24px; padding:28px 32px; max-width:1400px; margin:0 auto; }
+
+  /* ── Section Card ── */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 24px;
+    margin-bottom: 20px;
+  }
+  .card-title {
+    font-size: 15px; font-weight: 700; margin-bottom: 20px;
+    display:flex; align-items:center; gap:8px;
+    padding-bottom: 14px; border-bottom: 1px solid var(--border);
+  }
+  .card-title::before {
+    content:''; display:inline-block; width:3px; height:16px;
+    background: var(--accent); border-radius:2px;
+  }
+
+  /* ── Form Fields ── */
+  .field-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .field-grid.cols-3 { grid-template-columns: 1fr 1fr 1fr; }
+  .field-grid.cols-1 { grid-template-columns: 1fr; }
+  .field { display: flex; flex-direction: column; gap: 6px; }
+  .field.span2 { grid-column: span 2; }
+  .field.span3 { grid-column: span 3; }
+  label { font-size: 12px; color: var(--text-sec); font-weight: 600; letter-spacing: 0.3px; }
+  label .req { color: var(--danger); margin-left: 2px; }
+  input[type=text], input[type=number], select, textarea {
+    font-family: inherit; font-size: 13px;
+    background: var(--surface-el);
+    border: 1px solid var(--border);
+    border-radius: 7px;
+    color: var(--text);
+    padding: 9px 12px;
+    outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    width: 100%;
+  }
+  input[type=text]:focus, input[type=number]:focus, select:focus, textarea:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(79,124,255,0.15);
+  }
+  select option { background: var(--surface-el); }
+  textarea { resize: vertical; min-height: 70px; }
+  input[type=range] { width:100%; accent-color: var(--accent); cursor:pointer; }
+  .range-row { display:flex; align-items:center; gap:12px; }
+  .range-val {
+    min-width: 44px; text-align:center; font-weight:700;
+    color: var(--accent); font-size:14px;
+    background: rgba(79,124,255,0.12); border-radius:6px; padding:3px 8px;
+  }
+
+  /* ── Milestone ── */
+  .milestone-item {
+    background: var(--surface-el);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 18px;
+    margin-bottom: 14px;
+    position: relative;
+  }
+  .milestone-header {
+    display:flex; align-items:center; justify-content:space-between;
+    margin-bottom: 14px;
+  }
+  .milestone-num {
+    font-size:12px; font-weight:700; color:#fff;
+    background: var(--accent); border-radius:6px; padding:3px 10px;
+  }
+  .status-badge {
+    display:inline-block; padding:3px 10px; border-radius:6px; font-size:12px; font-weight:600;
+  }
+  .status-완료  { background:rgba(34,197,94,0.15);  color:var(--success); }
+  .status-진행중 { background:rgba(79,124,255,0.15); color:var(--accent-l); }
+  .status-대기  { background:rgba(90,99,117,0.15);  color:var(--text-ter); }
+
+  /* ── 작업 내용 항목 ── */
+  .task-list { display:flex; flex-direction:column; gap:7px; }
+  .task-item { display:flex; align-items:center; gap:8px; }
+  .task-item input { flex:1; }
+  .btn-remove-task {
+    background:none; border:none; color:var(--text-ter);
+    font-size:18px; line-height:1; padding:2px 5px; cursor:pointer;
+    border-radius:4px; transition:color 0.15s;
+  }
+  .btn-remove-task:hover { color:var(--danger); }
+  .btn-add-task {
+    background:none; border:1px dashed var(--border);
+    color:var(--text-sec); font-size:12px; border-radius:6px;
+    padding:5px 10px; cursor:pointer; transition:all 0.15s; margin-top:4px;
+  }
+  .btn-add-task:hover { border-color:var(--accent); color:var(--accent-l); }
+
+  /* ── JSON Preview ── */
+  .preview-panel { position: sticky; top: 82px; height: fit-content; }
+  .preview-box {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 14px; padding: 20px; overflow: hidden;
+  }
+  .preview-title {
+    font-size:13px; font-weight:700; color:var(--text-sec);
+    margin-bottom:14px; display:flex; align-items:center; justify-content:space-between;
+  }
+  .preview-title span { font-size:11px; color:var(--text-ter); }
+  pre {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px; color: #a8c8a8;
+    background: #0d1117; border-radius: 8px;
+    padding: 14px; overflow: auto;
+    max-height: 520px; line-height: 1.7;
+    white-space: pre-wrap; word-break: break-all;
+  }
+  .copy-btn {
+    width:100%; margin-top:12px; background:rgba(79,124,255,0.12);
+    color:var(--accent-l); border:1px solid rgba(79,124,255,0.3);
+    border-radius:7px; padding:9px; font-size:13px; font-weight:600; cursor:pointer;
+    transition: all 0.2s;
+  }
+  .copy-btn:hover { background:rgba(79,124,255,0.22); }
+  .copy-btn.copied { background:rgba(34,197,94,0.15); color:var(--success); border-color:rgba(34,197,94,0.3); }
+
+  /* ── Progress bar in preview ── */
+  .prog-label { display:flex; justify-content:space-between; margin-bottom:4px; font-size:11px; color:var(--text-sec); }
+  .prog-bar { height:5px; background:var(--border); border-radius:3px; overflow:hidden; }
+  .prog-fill { height:100%; background:linear-gradient(90deg,var(--accent),var(--accent-l)); border-radius:3px; transition:width 0.3s; }
+
+  @media (max-width: 900px) {
+    .page { grid-template-columns: 1fr; }
+    .preview-panel { position: static; }
+  }
+</style>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+</head>
+<body>
+
+<!-- Header -->
+<div class="header">
+  <div class="header-title">
+    <span>📋</span>
+    프로젝트 진행 상황 입력
+  </div>
+  <div class="header-actions">
+    <button class="btn-secondary" onclick="resetForm()">초기화</button>
+    <button class="btn-secondary" onclick="downloadJson()">⬇ JSON 다운로드</button>
+    <button class="btn-primary" onclick="saveAndApply()">✓ 저장 &amp; 적용</button>
+  </div>
+</div>
+
+<div class="page">
+  <!-- LEFT: Form -->
+  <div class="form-col">
+
+    <!-- ① 프로젝트 진행 상황 요약 -->
+    <div class="card">
+      <div class="card-title">① 프로젝트 진행 상황 요약</div>
+      <div class="field-grid" style="margin-bottom:14px;">
+        <div class="field span2">
+          <label>프로젝트명 <span class="req">*</span></label>
+          <input type="text" id="f_name" placeholder="예) 메리츠 증권 2단계 개발" oninput="updatePreview()">
+        </div>
+        <div class="field">
+          <label>고객사명 <span class="req">*</span></label>
+          <input type="text" id="f_client" placeholder="예) 메리츠화재" oninput="updatePreview()">
+        </div>
+        <div class="field">
+          <label>우선순위 <span class="req">*</span></label>
+          <select id="f_priority" onchange="updatePreview()">
+            <option value="">선택</option>
+            <option value="High">High</option>
+            <option value="Medium">Medium</option>
+            <option value="Low">Low</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>계약 시작일 <span class="req">*</span></label>
+          <input type="text" id="f_start" placeholder="예) 2026-01-01" oninput="updatePreview()">
+        </div>
+        <div class="field">
+          <label>계약 종료일 <span class="req">*</span></label>
+          <input type="text" id="f_end" placeholder="예) 2026-10-31" oninput="updatePreview()">
+        </div>
+        <div class="field">
+          <label>경과 일수</label>
+          <input type="number" id="f_elapsed" placeholder="예) 42" min="0" oninput="updatePreview()">
+        </div>
+        <div class="field">
+          <label>남은 일수</label>
+          <input type="number" id="f_remain" placeholder="예) 261" min="0" oninput="updatePreview()">
+        </div>
+        <div class="field span2">
+          <label>담당자 <span class="req">*</span></label>
+          <input type="text" id="f_manager" placeholder="예) 박민수" oninput="updatePreview()">
+        </div>
+      </div>
+
+      <!-- 진행률 슬라이더 -->
+      <div class="field">
+        <label>전체 진행률 <span class="req">*</span></label>
+        <div class="prog-label">
+          <span>0%</span><span>100%</span>
+        </div>
+        <div class="range-row">
+          <input type="range" id="f_progress" min="0" max="100" value="0"
+            oninput="document.getElementById('f_progress_val').textContent=this.value+'%'; document.getElementById('f_prog_fill').style.width=this.value+'%'; updatePreview()">
+          <div class="range-val" id="f_progress_val">0%</div>
+        </div>
+        <div class="prog-bar" style="margin-top:6px;">
+          <div class="prog-fill" id="f_prog_fill" style="width:0%"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ② 마일스톤 진행현황 -->
+    <div class="card">
+      <div class="card-title">② 마일스톤 진행현황</div>
+      <div id="milestone-list"></div>
+      <button class="btn-add" onclick="addMilestone()">+ 마일스톤 추가</button>
+    </div>
+
+  </div>
+
+  <!-- RIGHT: JSON Preview -->
+  <div class="preview-panel">
+    <div class="preview-box">
+      <div class="preview-title">
+        JSON 미리보기
+        <span id="preview-updated">자동 업데이트</span>
+      </div>
+      <pre id="json-preview">{}</pre>
+      <button class="copy-btn" id="copy-btn" onclick="copyJson()">📋 클립보드에 복사</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── Milestone counter ────────────────────────────────────────────
+let msCount = 0;
+
+function addMilestone(data) {
+  msCount++;
+  const idx = msCount;
+  const d = data || {};
+  const tasks = d.작업_내용 || ['', '', ''];
+
+  const div = document.createElement('div');
+  div.className = 'milestone-item';
+  div.id = 'ms-' + idx;
+
+  const statusOpts = ['완료','진행중','대기'].map(s =>
+    `<option value="${s}" ${d.상태===s?'selected':''}>${s}</option>`
+  ).join('');
+
+  const taskItems = tasks.map(t =>
+    `<div class="task-item">
+       <input type="text" placeholder="작업 내용 입력" value="${t}" oninput="updatePreview()">
+       <button class="btn-remove-task" onclick="removeTask(this)" title="삭제">×</button>
+     </div>`
+  ).join('');
+
+  div.innerHTML = `
+    <div class="milestone-header">
+      <span class="milestone-num">${idx}단계</span>
+      <button class="btn-danger" onclick="removeMilestone(${idx})">삭제</button>
+    </div>
+    <div class="field-grid" style="margin-bottom:12px;">
+      <div class="field span2">
+        <label>단계명 <span class="req">*</span></label>
+        <input type="text" class="ms-name" placeholder="예) 요구사항 분석" value="${d.단계명||''}" oninput="updatePreview()">
+      </div>
+      <div class="field">
+        <label>시작일</label>
+        <input type="text" class="ms-start" placeholder="2026-01-01" value="${d.시작일||''}" oninput="updatePreview()">
+      </div>
+      <div class="field">
+        <label>종료일</label>
+        <input type="text" class="ms-end" placeholder="2026-03-31" value="${d.종료일||''}" oninput="updatePreview()">
+      </div>
+      <div class="field">
+        <label>상태 <span class="req">*</span></label>
+        <select class="ms-status" onchange="toggleProgress(this); updatePreview()">
+          <option value="">선택</option>
+          ${statusOpts}
+        </select>
+      </div>
+      <div class="field ms-prog-field" style="display:none;">
+        <label>단계 진행률</label>
+        <div class="range-row">
+          <input type="range" class="ms-progress" min="0" max="100" value="${d.단계_진행률||0}"
+            oninput="this.parentNode.querySelector('.ms-prog-val').textContent=this.value+'%'; updatePreview()">
+          <div class="range-val ms-prog-val">${d.단계_진행률||0}%</div>
+        </div>
+      </div>
+    </div>
+    <div class="field">
+      <label>작업 내용</label>
+      <div class="task-list">${taskItems}</div>
+      <button class="btn-add-task" onclick="addTask(this)">+ 항목 추가</button>
+    </div>
+  `;
+
+  document.getElementById('milestone-list').appendChild(div);
+
+  // 상태 초기값에 따라 진행률 표시
+  const sel = div.querySelector('.ms-status');
+  toggleProgress(sel);
+  updatePreview();
+}
+
+function removeMilestone(idx) {
+  const el = document.getElementById('ms-' + idx);
+  if (el) { el.remove(); updatePreview(); }
+}
+
+function toggleProgress(sel) {
+  const field = sel.closest('.milestone-item').querySelector('.ms-prog-field');
+  field.style.display = sel.value === '진행중' ? 'flex' : 'none';
+}
+
+function addTask(btn) {
+  const list = btn.previousElementSibling;
+  const div = document.createElement('div');
+  div.className = 'task-item';
+  div.innerHTML = `<input type="text" placeholder="작업 내용 입력" oninput="updatePreview()">
+    <button class="btn-remove-task" onclick="removeTask(this)" title="삭제">×</button>`;
+  list.appendChild(div);
+  updatePreview();
+}
+
+function removeTask(btn) {
+  btn.parentElement.remove();
+  updatePreview();
+}
+
+// ── Build JSON ───────────────────────────────────────────────────
+function buildJson() {
+  const summary = {
+    프로젝트명:   document.getElementById('f_name').value,
+    고객사명:     document.getElementById('f_client').value,
+    계약_시작일:  document.getElementById('f_start').value,
+    계약_종료일:  document.getElementById('f_end').value,
+    우선순위:     document.getElementById('f_priority').value,
+    전체_진행률:  document.getElementById('f_progress').value + '%',
+    경과_일수:    document.getElementById('f_elapsed').value ? document.getElementById('f_elapsed').value + '일' : '',
+    남은_일수:    document.getElementById('f_remain').value  ? document.getElementById('f_remain').value  + '일' : '',
+    담당자:       document.getElementById('f_manager').value,
+  };
+
+  const milestones = [];
+  document.querySelectorAll('.milestone-item').forEach((el, i) => {
+    const status   = el.querySelector('.ms-status').value;
+    const progEl   = el.querySelector('.ms-progress');
+    const tasks    = Array.from(el.querySelectorAll('.task-list input')).map(inp => inp.value).filter(v => v.trim());
+    milestones.push({
+      단계_번호:   i + 1,
+      단계명:      el.querySelector('.ms-name').value,
+      시작일:      el.querySelector('.ms-start').value,
+      종료일:      el.querySelector('.ms-end').value,
+      상태:        status,
+      작업_내용:   tasks,
+      단계_진행률: status === '진행중' && progEl ? progEl.value + '%' : '',
+    });
+  });
+
+  return { 프로젝트_진행_상황_요약: summary, 마일스톤_진행현황: milestones };
+}
+
+function updatePreview() {
+  const json = buildJson();
+  document.getElementById('json-preview').textContent = JSON.stringify(json, null, 2);
+  document.getElementById('preview-updated').textContent = '✓ ' + new Date().toLocaleTimeString('ko-KR', {hour:'2-digit',minute:'2-digit',second:'2-digit'});
+}
+
+function copyJson() {
+  const text = document.getElementById('json-preview').textContent;
+  navigator.clipboard.writeText(text).then(() => {
+    const btn = document.getElementById('copy-btn');
+    btn.textContent = '✓ 복사 완료!';
+    btn.classList.add('copied');
+    setTimeout(() => { btn.textContent = '📋 클립보드에 복사'; btn.classList.remove('copied'); }, 2000);
+  });
+}
+
+function downloadJson() {
+  const json = buildJson();
+  const blob = new Blob([JSON.stringify(json, null, 2)], { type:'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'project-detail-data.json';
+  a.click();
+}
+
+function saveAndApply() {
+  const json = buildJson();
+  localStorage.setItem('pgDetailData', JSON.stringify(json));
+
+  // 버튼 피드백
+  const btn = document.querySelector('.btn-primary');
+  const orig = btn.innerHTML;
+  btn.innerHTML = '✓ 저장 완료!';
+  btn.style.background = 'var(--success)';
+
+  setTimeout(() => {
+    btn.innerHTML = orig;
+    btn.style.background = '';
+  }, 800);
+}
+
+function resetForm() {
+  if (!confirm('입력한 내용을 모두 초기화할까요?')) return;
+  document.querySelectorAll('input[type=text], input[type=number]').forEach(el => el.value = '');
+  document.querySelectorAll('select').forEach(el => el.selectedIndex = 0);
+  document.getElementById('f_progress').value = 0;
+  document.getElementById('f_progress_val').textContent = '0%';
+  document.getElementById('f_prog_fill').style.width = '0%';
+  document.getElementById('milestone-list').innerHTML = '';
+  msCount = 0;
+  updatePreview();
+}
+
+// ── Init: 기본 마일스톤 4개 ──────────────────────────────────────
+window.onload = function() {
+  addMilestone();
+  addMilestone();
+  addMilestone();
+  addMilestone();
+  updatePreview();
+};
+</script>
+</body>
+</html>

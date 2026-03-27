@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(open \"/Users/seyongeo/code folder/project-detail-input.html\")",
+      "Bash(open \"/Users/seyongeo/code folder/project-detail-fields.html\")",
+      "Bash(gh --version)",
+      "Bash(git --version)",
+      "Bash(gh auth:*)"
+    ]
+  }
+}
