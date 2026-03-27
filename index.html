@@ -3,333 +3,799 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TaskFlow - 프로젝트 관리 시스템</title>
+    <title>TaskFlow — File Explorer</title>
     <link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
     <style>
         :root {
-            --color-bg: #0a0e1a;
-            --color-surface: #141925;
-            --color-surface-elevated: #1c2331;
-            --color-border: #252d3f;
-            --color-text-primary: #e4e8f0;
-            --color-text-secondary: #8b95a8;
-            --color-text-tertiary: #5a6375;
-            --color-accent: #4f7cff;
-            --color-accent-light: #6b91ff;
-            --color-success: #22c55e;
-            --color-warning: #f59e0b;
-            --color-danger: #ef4444;
-            --color-purple: #a855f7;
-            --color-cyan: #06b6d4;
-            --shadow-sm: 0 1px 2px rgba(0,0,0,0.3);
-            --shadow-md: 0 4px 12px rgba(0,0,0,0.4);
-            --shadow-lg: 0 8px 24px rgba(0,0,0,0.5);
+            --bg: #0a0e1a;
+            --surface: #141925;
+            --surface-elevated: #1c2331;
+            --surface-hover: #1f2840;
+            --border: #252d3f;
+            --border-light: #2e3854;
+            --text-primary: #e4e8f0;
+            --text-secondary: #8b95a8;
+            --text-tertiary: #5a6375;
+            --accent: #4f7cff;
+            --accent-light: #6b91ff;
+            --success: #22c55e;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --purple: #a855f7;
+            --cyan: #06b6d4;
+            --orange: #f97316;
+            --pink: #ec4899;
+            --teal: #14b8a6;
         }
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
             font-family: 'Instrument Sans', -apple-system, sans-serif;
-            background: var(--color-bg);
-            color: var(--color-text-primary);
-            line-height: 1.6;
+            background: var(--bg);
+            color: var(--text-primary);
             min-height: 100vh;
+            font-size: 13px;
         }
+
+        /* Ambient glow */
         body::before {
             content: '';
             position: fixed; top: -30%; right: -10%;
             width: 700px; height: 700px;
-            background: radial-gradient(circle, rgba(79,124,255,0.12) 0%, transparent 70%);
+            background: radial-gradient(circle, rgba(79,124,255,0.08) 0%, transparent 70%);
             border-radius: 50%; pointer-events: none; z-index: 0;
         }
         body::after {
             content: '';
             position: fixed; bottom: -20%; left: -10%;
             width: 600px; height: 600px;
-            background: radial-gradient(circle, rgba(168,85,247,0.10) 0%, transparent 70%);
+            background: radial-gradient(circle, rgba(168,85,247,0.07) 0%, transparent 70%);
             border-radius: 50%; pointer-events: none; z-index: 0;
         }
 
-        .wrapper {
+        .layout {
             position: relative; z-index: 1;
-            max-width: 960px;
+            max-width: 1060px;
             margin: 0 auto;
-            padding: 60px 24px 80px;
+            padding: 40px 24px 80px;
         }
 
-        /* Header */
-        header {
+        /* ── Header ── */
+        .header {
             display: flex;
             align-items: center;
-            gap: 14px;
-            margin-bottom: 56px;
+            justify-content: space-between;
+            gap: 16px;
+            margin-bottom: 32px;
+        }
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex-shrink: 0;
         }
         .logo-icon {
-            width: 44px; height: 44px;
-            background: linear-gradient(135deg, var(--color-accent), var(--color-purple));
-            border-radius: 12px;
+            width: 38px; height: 38px;
+            background: linear-gradient(135deg, var(--accent), var(--purple));
+            border-radius: 10px;
             display: flex; align-items: center; justify-content: center;
-            font-size: 20px;
-            box-shadow: 0 0 24px rgba(79,124,255,0.35);
+            font-size: 18px;
+            box-shadow: 0 0 20px rgba(79,124,255,0.3);
         }
         .logo-text h1 {
-            font-size: 22px;
+            font-size: 18px;
             font-weight: 700;
             letter-spacing: -0.3px;
         }
         .logo-text span {
-            font-size: 12px;
-            color: var(--color-text-tertiary);
+            font-size: 11px;
+            color: var(--text-tertiary);
             font-family: 'JetBrains Mono', monospace;
         }
 
-        /* Hero */
-        .hero {
-            margin-bottom: 56px;
+        /* ── Search ── */
+        .search-bar {
+            flex: 1;
+            max-width: 360px;
+            position: relative;
         }
-        .hero h2 {
-            font-size: 36px;
-            font-weight: 700;
-            letter-spacing: -0.5px;
-            line-height: 1.25;
-            margin-bottom: 14px;
+        .search-bar input {
+            width: 100%;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 8px 12px 8px 36px;
+            color: var(--text-primary);
+            font-family: inherit;
+            font-size: 13px;
+            outline: none;
+            transition: border-color 0.2s, box-shadow 0.2s;
         }
-        .hero h2 .accent {
-            background: linear-gradient(90deg, var(--color-accent-light), var(--color-cyan));
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
+        .search-bar input::placeholder { color: var(--text-tertiary); }
+        .search-bar input:focus {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px rgba(79,124,255,0.12);
         }
-        .hero p {
-            font-size: 15px;
-            color: var(--color-text-secondary);
-            max-width: 520px;
+        .search-icon {
+            position: absolute;
+            left: 11px; top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-tertiary);
+            pointer-events: none;
+        }
+        .search-clear {
+            position: absolute;
+            right: 10px; top: 50%;
+            transform: translateY(-50%);
+            background: none; border: none;
+            color: var(--text-tertiary);
+            cursor: pointer;
+            font-size: 14px;
+            display: none;
+            padding: 0 2px;
+        }
+        .search-clear:hover { color: var(--text-secondary); }
+
+        /* ── Toolbar ── */
+        .toolbar {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 8px;
+        }
+        .toolbar-btn {
+            background: none;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            color: var(--text-secondary);
+            font-size: 11px;
+            font-family: 'JetBrains Mono', monospace;
+            padding: 5px 10px;
+            cursor: pointer;
+            transition: border-color 0.15s, color 0.15s, background 0.15s;
+        }
+        .toolbar-btn:hover {
+            border-color: var(--accent);
+            color: var(--accent-light);
+            background: rgba(79,124,255,0.06);
+        }
+        .file-count {
+            margin-left: auto;
+            font-size: 11px;
+            font-family: 'JetBrains Mono', monospace;
+            color: var(--text-tertiary);
         }
 
-        /* Section */
-        .section-label {
+        /* ── Explorer container ── */
+        .explorer {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            overflow: hidden;
+        }
+
+        /* Column header */
+        .col-header {
+            display: grid;
+            grid-template-columns: 1fr 88px 140px;
+            padding: 9px 16px;
+            background: var(--surface-elevated);
+            border-bottom: 1px solid var(--border);
             font-size: 11px;
             font-weight: 600;
-            letter-spacing: 1.2px;
-            text-transform: uppercase;
-            color: var(--color-text-tertiary);
-            margin-bottom: 16px;
             font-family: 'JetBrains Mono', monospace;
+            color: var(--text-tertiary);
+            letter-spacing: 0.6px;
+            text-transform: uppercase;
+            user-select: none;
         }
+        .col-name { }
+        .col-size { text-align: right; }
+        .col-date { text-align: right; padding-right: 4px; }
 
-        /* Grid */
-        .grid {
+        /* ── Tree rows ── */
+        .tree { list-style: none; }
+
+        .tree-item { }
+
+        .tree-row {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-            gap: 14px;
-            margin-bottom: 48px;
-        }
-
-        /* Card */
-        .card {
-            background: var(--color-surface);
-            border: 1px solid var(--color-border);
-            border-radius: 14px;
-            padding: 22px 24px;
+            grid-template-columns: 1fr 88px 140px;
+            align-items: center;
+            padding: 0 16px;
+            height: 36px;
+            cursor: pointer;
+            border-bottom: 1px solid transparent;
+            transition: background 0.12s;
             text-decoration: none;
             color: inherit;
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-            transition: border-color 0.2s, background 0.2s, transform 0.15s, box-shadow 0.2s;
+        }
+        .tree-row:hover {
+            background: var(--surface-hover);
+        }
+        .tree-row.folder-row {
             cursor: pointer;
         }
-        .card:hover {
-            border-color: var(--color-accent);
-            background: var(--color-surface-elevated);
-            transform: translateY(-2px);
-            box-shadow: var(--shadow-lg), 0 0 0 1px rgba(79,124,255,0.15);
-        }
-        .card-top {
+
+        .row-name {
             display: flex;
             align-items: center;
-            justify-content: space-between;
+            gap: 0;
+            min-width: 0;
         }
-        .card-icon {
-            width: 36px; height: 36px;
-            border-radius: 9px;
-            display: flex; align-items: center; justify-content: center;
-            font-size: 17px;
-        }
-        .card-arrow {
-            color: var(--color-text-tertiary);
-            font-size: 16px;
-            transition: color 0.2s, transform 0.2s;
-        }
-        .card:hover .card-arrow {
-            color: var(--color-accent);
-            transform: translateX(3px);
-        }
-        .card-title {
-            font-size: 14px;
-            font-weight: 600;
-            color: var(--color-text-primary);
-            line-height: 1.4;
-        }
-        .card-desc {
-            font-size: 12px;
-            color: var(--color-text-tertiary);
-        }
-        .card-badge {
-            display: inline-flex;
-            align-items: center;
-            gap: 4px;
+        .indent { display: inline-block; flex-shrink: 0; }
+        .chevron {
+            width: 20px; height: 20px;
+            display: inline-flex; align-items: center; justify-content: center;
+            flex-shrink: 0;
+            color: var(--text-tertiary);
             font-size: 10px;
-            font-weight: 600;
+            transition: transform 0.18s;
+        }
+        .chevron.open { transform: rotate(90deg); }
+
+        .file-icon {
+            width: 20px; height: 20px;
+            display: inline-flex; align-items: center; justify-content: center;
+            flex-shrink: 0;
+            margin-right: 7px;
+            font-size: 14px;
+        }
+        .row-label {
+            font-size: 13px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .row-label.folder-label {
+            font-weight: 500;
+            color: var(--text-primary);
+        }
+        .row-label.file-link {
+            color: var(--text-primary);
+        }
+        .tree-row:hover .row-label.file-link {
+            color: var(--accent-light);
+            text-decoration: underline;
+        }
+
+        .row-size {
             font-family: 'JetBrains Mono', monospace;
-            padding: 2px 8px;
-            border-radius: 20px;
-            width: fit-content;
+            font-size: 11px;
+            color: var(--text-tertiary);
+            text-align: right;
+        }
+        .row-date {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 11px;
+            color: var(--text-tertiary);
+            text-align: right;
+            padding-right: 4px;
         }
 
-        /* Color variants */
-        .icon-blue   { background: rgba(79,124,255,0.15); }
-        .icon-purple { background: rgba(168,85,247,0.15); }
-        .icon-cyan   { background: rgba(6,182,212,0.15); }
-        .icon-green  { background: rgba(34,197,94,0.15); }
-        .icon-orange { background: rgba(249,115,22,0.15); }
-        .icon-yellow { background: rgba(245,158,11,0.15); }
-        .icon-pink   { background: rgba(236,72,153,0.15); }
-        .icon-teal   { background: rgba(20,184,166,0.15); }
+        /* Type badges on hover */
+        .type-badge {
+            font-size: 9px;
+            font-weight: 700;
+            font-family: 'JetBrains Mono', monospace;
+            padding: 1px 5px;
+            border-radius: 3px;
+            margin-left: 8px;
+            flex-shrink: 0;
+            opacity: 0;
+            transition: opacity 0.15s;
+        }
+        .tree-row:hover .type-badge { opacity: 1; }
+        .badge-html  { background: rgba(249,115,22,0.15); color: #fb923c; }
+        .badge-json  { background: rgba(245,158,11,0.15); color: #fbbf24; }
+        .badge-md    { background: rgba(79,124,255,0.15); color: var(--accent-light); }
+        .badge-zip   { background: rgba(168,85,247,0.15); color: #c084fc; }
+        .badge-txt   { background: rgba(139,149,168,0.12); color: var(--text-secondary); }
+        .badge-folder{ background: rgba(6,182,212,0.12); color: var(--cyan); }
 
-        .badge-blue   { background: rgba(79,124,255,0.12); color: var(--color-accent-light); }
-        .badge-purple { background: rgba(168,85,247,0.12); color: #c084fc; }
-        .badge-cyan   { background: rgba(6,182,212,0.12); color: var(--color-cyan); }
-        .badge-green  { background: rgba(34,197,94,0.12); color: var(--color-success); }
-        .badge-orange { background: rgba(249,115,22,0.12); color: #fb923c; }
-        .badge-yellow { background: rgba(245,158,11,0.12); color: var(--color-warning); }
-        .badge-pink   { background: rgba(236,72,153,0.12); color: #f472b6; }
-        .badge-teal   { background: rgba(20,184,166,0.12); color: #2dd4bf; }
+        /* Folder children */
+        .folder-children {
+            overflow: hidden;
+            transition: max-height 0.22s ease;
+        }
+        .folder-children.collapsed {
+            max-height: 0;
+        }
+        .folder-children .tree-row {
+            background: rgba(0,0,0,0.12);
+        }
+        .folder-children .tree-row:hover {
+            background: var(--surface-hover);
+        }
 
-        /* Divider */
-        .divider {
+        /* Separator between root files and folders */
+        .tree-section-sep {
             height: 1px;
-            background: var(--color-border);
-            margin: 40px 0;
+            background: var(--border);
         }
 
-        /* Footer */
-        footer {
+        /* Empty state */
+        .empty-state {
+            display: none;
+            padding: 48px 24px;
             text-align: center;
-            font-size: 12px;
-            color: var(--color-text-tertiary);
+            color: var(--text-tertiary);
+            font-size: 13px;
+        }
+        .empty-state svg { margin-bottom: 12px; opacity: 0.35; }
+
+        /* ── Footer ── */
+        .footer {
+            margin-top: 32px;
+            text-align: center;
+            font-size: 11px;
+            color: var(--text-tertiary);
             font-family: 'JetBrains Mono', monospace;
         }
     </style>
 </head>
 <body>
-<div class="wrapper">
+<div class="layout">
 
-    <header>
-        <div class="logo-icon">⚡</div>
-        <div class="logo-text">
-            <h1>TaskFlow</h1>
-            <span>Project Management System</span>
+    <!-- Header -->
+    <header class="header">
+        <div class="logo">
+            <div class="logo-icon">⚡</div>
+            <div class="logo-text">
+                <h1>TaskFlow</h1>
+                <span>Project Management System</span>
+            </div>
+        </div>
+        <div class="search-bar">
+            <svg class="search-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+            <input type="text" id="searchInput" placeholder="파일 검색..." autocomplete="off">
+            <button class="search-clear" id="searchClear">✕</button>
         </div>
     </header>
 
-    <section class="hero">
-        <h2>프로젝트 관리<br><span class="accent">통합 대시보드</span></h2>
-        <p>프로젝트의 데이터 등록, 진행 상황 입력, 상세 조회까지 모든 기능을 한 곳에서 관리합니다.</p>
-    </section>
-
-    <div class="section-label">관리 도구</div>
-    <div class="grid">
-
-        <a class="card" href="project-management.html">
-            <div class="card-top">
-                <div class="card-icon icon-blue">🗂️</div>
-                <span class="card-arrow">→</span>
-            </div>
-            <div class="card-title">프로젝트 관리</div>
-            <div class="card-desc">전체 프로젝트 목록 조회 및 기본 관리</div>
-            <span class="card-badge badge-blue">management</span>
-        </a>
-
-        <a class="card" href="project-management-view.html">
-            <div class="card-top">
-                <div class="card-icon icon-cyan">👁️</div>
-                <span class="card-arrow">→</span>
-            </div>
-            <div class="card-title">프로젝트 관리 뷰</div>
-            <div class="card-desc">프로젝트 현황을 시각적으로 확인</div>
-            <span class="card-badge badge-cyan">view</span>
-        </a>
-
-        <a class="card" href="project-management-w2.html">
-            <div class="card-top">
-                <div class="card-icon icon-teal">📋</div>
-                <span class="card-arrow">→</span>
-            </div>
-            <div class="card-title">프로젝트 관리 W2</div>
-            <div class="card-desc">2번째 버전 프로젝트 관리 화면</div>
-            <span class="card-badge badge-teal">w2</span>
-        </a>
-
-        <a class="card" href="project-detail-fields.html">
-            <div class="card-top">
-                <div class="card-icon icon-purple">🔧</div>
-                <span class="card-arrow">→</span>
-            </div>
-            <div class="card-title">Data Entity 등록</div>
-            <div class="card-desc">프로젝트 데이터 항목 및 필드 구성</div>
-            <span class="card-badge badge-purple">fields</span>
-        </a>
-
-        <a class="card" href="project-detail-input.html">
-            <div class="card-top">
-                <div class="card-icon icon-green">✏️</div>
-                <span class="card-arrow">→</span>
-            </div>
-            <div class="card-title">프로젝트 진행 상황 입력</div>
-            <div class="card-desc">진행률, 이슈, 상태 정보 입력</div>
-            <span class="card-badge badge-green">input</span>
-        </a>
-
+    <!-- Toolbar -->
+    <div class="toolbar">
+        <button class="toolbar-btn" id="expandAll">▶ 모두 펼치기</button>
+        <button class="toolbar-btn" id="collapseAll">▼ 모두 접기</button>
+        <span class="file-count" id="fileCount">14 items</span>
     </div>
 
-    <div class="section-label">상세 조회</div>
-    <div class="grid">
+    <!-- Explorer -->
+    <div class="explorer">
+        <div class="col-header">
+            <span class="col-name">이름</span>
+            <span class="col-size">크기</span>
+            <span class="col-date">수정일</span>
+        </div>
 
-        <a class="card" href="project-detail.html">
-            <div class="card-top">
-                <div class="card-icon icon-orange">📊</div>
-                <span class="card-arrow">→</span>
-            </div>
-            <div class="card-title">프로젝트 상세</div>
-            <div class="card-desc">프로젝트 전체 정보 상세 조회</div>
-            <span class="card-badge badge-orange">detail</span>
-        </a>
+        <ul class="tree" id="fileTree">
 
-        <a class="card" href="project-detail2.html">
-            <div class="card-top">
-                <div class="card-icon icon-yellow">📈</div>
-                <span class="card-arrow">→</span>
-            </div>
-            <div class="card-title">프로젝트 상세 2</div>
-            <div class="card-desc">프로젝트 상세 2번째 버전</div>
-            <span class="card-badge badge-yellow">detail v2</span>
-        </a>
+            <!-- ── 루트 파일들 ── -->
+            <li class="tree-item" data-name="project-detail-fields.html">
+                <a class="tree-row" href="project-detail-fields.html">
+                    <div class="row-name">
+                        <span class="indent" style="width:0"></span>
+                        <span class="chevron" style="visibility:hidden"></span>
+                        <span class="file-icon">
+                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none"><rect x="3" y="3" width="18" height="18" rx="2" fill="rgba(249,115,22,0.2)" stroke="rgba(249,115,22,0.6)" stroke-width="1.5"/><path d="M7 8h10M7 12h7M7 16h5" stroke="rgba(249,115,22,0.9)" stroke-width="1.5" stroke-linecap="round"/></svg>
+                        </span>
+                        <span class="row-label file-link">project-detail-fields.html</span>
+                        <span class="type-badge badge-html">HTML</span>
+                    </div>
+                    <span class="row-size">29 KB</span>
+                    <span class="row-date">2026-03-27</span>
+                </a>
+            </li>
 
-        <a class="card" href="project-detail3.html">
-            <div class="card-top">
-                <div class="card-icon icon-pink">🚀</div>
-                <span class="card-arrow">→</span>
-            </div>
-            <div class="card-title">프로젝트 상세 3</div>
-            <div class="card-desc">프로젝트 상세 3번째 버전</div>
-            <span class="card-badge badge-pink">detail v3</span>
-        </a>
+            <li class="tree-item" data-name="project-detail-input.html">
+                <a class="tree-row" href="project-detail-input.html">
+                    <div class="row-name">
+                        <span class="indent" style="width:0"></span>
+                        <span class="chevron" style="visibility:hidden"></span>
+                        <span class="file-icon">
+                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none"><rect x="3" y="3" width="18" height="18" rx="2" fill="rgba(249,115,22,0.2)" stroke="rgba(249,115,22,0.6)" stroke-width="1.5"/><path d="M7 8h10M7 12h7M7 16h5" stroke="rgba(249,115,22,0.9)" stroke-width="1.5" stroke-linecap="round"/></svg>
+                        </span>
+                        <span class="row-label file-link">project-detail-input.html</span>
+                        <span class="type-badge badge-html">HTML</span>
+                    </div>
+                    <span class="row-size">19 KB</span>
+                    <span class="row-date">2026-03-27</span>
+                </a>
+            </li>
 
+            <li class="tree-item" data-name="project-detail-spec.md">
+                <a class="tree-row" href="project-detail-spec.md">
+                    <div class="row-name">
+                        <span class="indent" style="width:0"></span>
+                        <span class="chevron" style="visibility:hidden"></span>
+                        <span class="file-icon">
+                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none"><rect x="3" y="3" width="18" height="18" rx="2" fill="rgba(79,124,255,0.2)" stroke="rgba(79,124,255,0.6)" stroke-width="1.5"/><path d="M7 8h10M7 12h10M7 16h6" stroke="rgba(79,124,255,0.9)" stroke-width="1.5" stroke-linecap="round"/></svg>
+                        </span>
+                        <span class="row-label file-link">project-detail-spec.md</span>
+                        <span class="type-badge badge-md">MD</span>
+                    </div>
+                    <span class="row-size">26 KB</span>
+                    <span class="row-date">2026-03-27</span>
+                </a>
+            </li>
+
+            <li class="tree-item" data-name="project-detail.html">
+                <a class="tree-row" href="project-detail.html">
+                    <div class="row-name">
+                        <span class="indent" style="width:0"></span>
+                        <span class="chevron" style="visibility:hidden"></span>
+                        <span class="file-icon">
+                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none"><rect x="3" y="3" width="18" height="18" rx="2" fill="rgba(249,115,22,0.2)" stroke="rgba(249,115,22,0.6)" stroke-width="1.5"/><path d="M7 8h10M7 12h7M7 16h5" stroke="rgba(249,115,22,0.9)" stroke-width="1.5" stroke-linecap="round"/></svg>
+                        </span>
+                        <span class="row-label file-link">project-detail.html</span>
+                        <span class="type-badge badge-html">HTML</span>
+                    </div>
+                    <span class="row-size">88 KB</span>
+                    <span class="row-date">2026-03-27</span>
+                </a>
+            </li>
+
+            <li class="tree-item" data-name="project-detail2.html">
+                <a class="tree-row" href="project-detail2.html">
+                    <div class="row-name">
+                        <span class="indent" style="width:0"></span>
+                        <span class="chevron" style="visibility:hidden"></span>
+                        <span class="file-icon">
+                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none"><rect x="3" y="3" width="18" height="18" rx="2" fill="rgba(249,115,22,0.2)" stroke="rgba(249,115,22,0.6)" stroke-width="1.5"/><path d="M7 8h10M7 12h7M7 16h5" stroke="rgba(249,115,22,0.9)" stroke-width="1.5" stroke-linecap="round"/></svg>
+                        </span>
+                        <span class="row-label file-link">project-detail2.html</span>
+                        <span class="type-badge badge-html">HTML</span>
+                    </div>
+                    <span class="row-size">86 KB</span>
+                    <span class="row-date">2026-03-27</span>
+                </a>
+            </li>
+
+            <li class="tree-item" data-name="project-detail3.html">
+                <a class="tree-row" href="project-detail3.html">
+                    <div class="row-name">
+                        <span class="indent" style="width:0"></span>
+                        <span class="chevron" style="visibility:hidden"></span>
+                        <span class="file-icon">
+                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none"><rect x="3" y="3" width="18" height="18" rx="2" fill="rgba(249,115,22,0.2)" stroke="rgba(249,115,22,0.6)" stroke-width="1.5"/><path d="M7 8h10M7 12h7M7 16h5" stroke="rgba(249,115,22,0.9)" stroke-width="1.5" stroke-linecap="round"/></svg>
+                        </span>
+                        <span class="row-label file-link">project-detail3.html</span>
+                        <span class="type-badge badge-html">HTML</span>
+                    </div>
+                    <span class="row-size">82 KB</span>
+                    <span class="row-date">2026-03-27</span>
+                </a>
+            </li>
+
+            <li class="tree-item" data-name="project-management-view.html">
+                <a class="tree-row" href="project-management-view.html">
+                    <div class="row-name">
+                        <span class="indent" style="width:0"></span>
+                        <span class="chevron" style="visibility:hidden"></span>
+                        <span class="file-icon">
+                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none"><rect x="3" y="3" width="18" height="18" rx="2" fill="rgba(249,115,22,0.2)" stroke="rgba(249,115,22,0.6)" stroke-width="1.5"/><path d="M7 8h10M7 12h7M7 16h5" stroke="rgba(249,115,22,0.9)" stroke-width="1.5" stroke-linecap="round"/></svg>
+                        </span>
+                        <span class="row-label file-link">project-management-view.html</span>
+                        <span class="type-badge badge-html">HTML</span>
+                    </div>
+                    <span class="row-size">76 KB</span>
+                    <span class="row-date">2026-03-27</span>
+                </a>
+            </li>
+
+            <li class="tree-item" data-name="project-management-w2.html">
+                <a class="tree-row" href="project-management-w2.html">
+                    <div class="row-name">
+                        <span class="indent" style="width:0"></span>
+                        <span class="chevron" style="visibility:hidden"></span>
+                        <span class="file-icon">
+                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none"><rect x="3" y="3" width="18" height="18" rx="2" fill="rgba(249,115,22,0.2)" stroke="rgba(249,115,22,0.6)" stroke-width="1.5"/><path d="M7 8h10M7 12h7M7 16h5" stroke="rgba(249,115,22,0.9)" stroke-width="1.5" stroke-linecap="round"/></svg>
+                        </span>
+                        <span class="row-label file-link">project-management-w2.html</span>
+                        <span class="type-badge badge-html">HTML</span>
+                    </div>
+                    <span class="row-size">14 KB</span>
+                    <span class="row-date">2026-03-27</span>
+                </a>
+            </li>
+
+            <li class="tree-item" data-name="project-management.html">
+                <a class="tree-row" href="project-management.html">
+                    <div class="row-name">
+                        <span class="indent" style="width:0"></span>
+                        <span class="chevron" style="visibility:hidden"></span>
+                        <span class="file-icon">
+                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none"><rect x="3" y="3" width="18" height="18" rx="2" fill="rgba(249,115,22,0.2)" stroke="rgba(249,115,22,0.6)" stroke-width="1.5"/><path d="M7 8h10M7 12h7M7 16h5" stroke="rgba(249,115,22,0.9)" stroke-width="1.5" stroke-linecap="round"/></svg>
+                        </span>
+                        <span class="row-label file-link">project-management.html</span>
+                        <span class="type-badge badge-html">HTML</span>
+                    </div>
+                    <span class="row-size">123 KB</span>
+                    <span class="row-date">2026-03-27</span>
+                </a>
+            </li>
+
+            <li class="tree-item" data-name="project-detail-data.json">
+                <a class="tree-row" href="project-detail-data.json">
+                    <div class="row-name">
+                        <span class="indent" style="width:0"></span>
+                        <span class="chevron" style="visibility:hidden"></span>
+                        <span class="file-icon">
+                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none"><rect x="3" y="3" width="18" height="18" rx="2" fill="rgba(245,158,11,0.2)" stroke="rgba(245,158,11,0.6)" stroke-width="1.5"/><path d="M8 7c-1 0-2 .9-2 2v2c0 .6-.4 1-1 1 .6 0 1 .4 1 1v2c0 1.1 1 2 2 2M16 7c1 0 2 .9 2 2v2c0 .6.4 1 1 1-.6 0-1 .4-1 1v2c0 1.1-1 2-2 2" stroke="rgba(245,158,11,0.9)" stroke-width="1.5" stroke-linecap="round"/></svg>
+                        </span>
+                        <span class="row-label file-link">project-detail-data.json</span>
+                        <span class="type-badge badge-json">JSON</span>
+                    </div>
+                    <span class="row-size">1.2 KB</span>
+                    <span class="row-date">2026-03-27</span>
+                </a>
+            </li>
+
+            <li class="tree-item" data-name="files.zip">
+                <div class="tree-row" style="cursor:default">
+                    <div class="row-name">
+                        <span class="indent" style="width:0"></span>
+                        <span class="chevron" style="visibility:hidden"></span>
+                        <span class="file-icon">
+                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none"><rect x="3" y="3" width="18" height="18" rx="2" fill="rgba(168,85,247,0.2)" stroke="rgba(168,85,247,0.6)" stroke-width="1.5"/><path d="M12 3v8m0 0-2-2m2 2 2-2" stroke="rgba(168,85,247,0.9)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M9 15h1v2H9v-2zm5 0h1v2h-1v-2zm-5 2h1v2H9v-2zm5 0h1v2h-1v-2z" fill="rgba(168,85,247,0.9)"/></svg>
+                        </span>
+                        <span class="row-label" style="color:var(--text-secondary)">files.zip</span>
+                        <span class="type-badge badge-zip">ZIP</span>
+                    </div>
+                    <span class="row-size">90 KB</span>
+                    <span class="row-date">2026-03-27</span>
+                </div>
+            </li>
+
+            <li class="tree-item" data-name="test_memo.txt">
+                <div class="tree-row" style="cursor:default">
+                    <div class="row-name">
+                        <span class="indent" style="width:0"></span>
+                        <span class="chevron" style="visibility:hidden"></span>
+                        <span class="file-icon">
+                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none"><rect x="3" y="3" width="18" height="18" rx="2" fill="rgba(139,149,168,0.15)" stroke="rgba(139,149,168,0.4)" stroke-width="1.5"/><path d="M7 8h10M7 12h6M7 16h4" stroke="rgba(139,149,168,0.7)" stroke-width="1.5" stroke-linecap="round"/></svg>
+                        </span>
+                        <span class="row-label" style="color:var(--text-secondary)">test_memo.txt</span>
+                        <span class="type-badge badge-txt">TXT</span>
+                    </div>
+                    <span class="row-size">9 B</span>
+                    <span class="row-date">2026-03-27</span>
+                </div>
+            </li>
+
+            <li class="tree-section-sep"></li>
+
+            <!-- ── Folder: files/ ── -->
+            <li class="tree-item folder-item" data-name="files" id="folder-files">
+                <div class="tree-row folder-row" onclick="toggleFolder('folder-files')">
+                    <div class="row-name">
+                        <span class="indent" style="width:0"></span>
+                        <span class="chevron open" id="chevron-folder-files">▶</span>
+                        <span class="file-icon">
+                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M3 7c0-1.1.9-2 2-2h4l2 2h8c1.1 0 2 .9 2 2v9c0 1.1-.9 2-2 2H5c-1.1 0-2-.9-2-2V7z" fill="rgba(6,182,212,0.2)" stroke="rgba(6,182,212,0.7)" stroke-width="1.5"/></svg>
+                        </span>
+                        <span class="row-label folder-label">files</span>
+                        <span class="type-badge badge-folder">DIR</span>
+                    </div>
+                    <span class="row-size">—</span>
+                    <span class="row-date">2026-03-27</span>
+                </div>
+                <ul class="tree folder-children" id="children-folder-files">
+                    <li class="tree-item" data-name="project-detail.html">
+                        <a class="tree-row" href="files/project-detail.html">
+                            <div class="row-name">
+                                <span class="indent" style="width:20px"></span>
+                                <span class="chevron" style="visibility:hidden"></span>
+                                <span class="file-icon">
+                                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none"><rect x="3" y="3" width="18" height="18" rx="2" fill="rgba(249,115,22,0.2)" stroke="rgba(249,115,22,0.6)" stroke-width="1.5"/><path d="M7 8h10M7 12h7M7 16h5" stroke="rgba(249,115,22,0.9)" stroke-width="1.5" stroke-linecap="round"/></svg>
+                                </span>
+                                <span class="row-label file-link">project-detail.html</span>
+                                <span class="type-badge badge-html">HTML</span>
+                            </div>
+                            <span class="row-size">—</span>
+                            <span class="row-date">—</span>
+                        </a>
+                    </li>
+                    <li class="tree-item" data-name="project-management-mockup.html">
+                        <a class="tree-row" href="files/project-management-mockup.html">
+                            <div class="row-name">
+                                <span class="indent" style="width:20px"></span>
+                                <span class="chevron" style="visibility:hidden"></span>
+                                <span class="file-icon">
+                                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none"><rect x="3" y="3" width="18" height="18" rx="2" fill="rgba(249,115,22,0.2)" stroke="rgba(249,115,22,0.6)" stroke-width="1.5"/><path d="M7 8h10M7 12h7M7 16h5" stroke="rgba(249,115,22,0.9)" stroke-width="1.5" stroke-linecap="round"/></svg>
+                                </span>
+                                <span class="row-label file-link">project-management-mockup.html</span>
+                                <span class="type-badge badge-html">HTML</span>
+                            </div>
+                            <span class="row-size">—</span>
+                            <span class="row-date">—</span>
+                        </a>
+                    </li>
+                </ul>
+            </li>
+
+            <!-- ── Folder: files 2/ ── -->
+            <li class="tree-item folder-item" data-name="files 2" id="folder-files2">
+                <div class="tree-row folder-row" onclick="toggleFolder('folder-files2')">
+                    <div class="row-name">
+                        <span class="indent" style="width:0"></span>
+                        <span class="chevron open" id="chevron-folder-files2">▶</span>
+                        <span class="file-icon">
+                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M3 7c0-1.1.9-2 2-2h4l2 2h8c1.1 0 2 .9 2 2v9c0 1.1-.9 2-2 2H5c-1.1 0-2-.9-2-2V7z" fill="rgba(6,182,212,0.2)" stroke="rgba(6,182,212,0.7)" stroke-width="1.5"/></svg>
+                        </span>
+                        <span class="row-label folder-label">files 2</span>
+                        <span class="type-badge badge-folder">DIR</span>
+                    </div>
+                    <span class="row-size">—</span>
+                    <span class="row-date">2026-03-27</span>
+                </div>
+                <ul class="tree folder-children" id="children-folder-files2">
+                    <li class="tree-item" data-name="project-detail.html">
+                        <a class="tree-row" href="files 2/project-detail.html">
+                            <div class="row-name">
+                                <span class="indent" style="width:20px"></span>
+                                <span class="chevron" style="visibility:hidden"></span>
+                                <span class="file-icon">
+                                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none"><rect x="3" y="3" width="18" height="18" rx="2" fill="rgba(249,115,22,0.2)" stroke="rgba(249,115,22,0.6)" stroke-width="1.5"/><path d="M7 8h10M7 12h7M7 16h5" stroke="rgba(249,115,22,0.9)" stroke-width="1.5" stroke-linecap="round"/></svg>
+                                </span>
+                                <span class="row-label file-link">project-detail.html</span>
+                                <span class="type-badge badge-html">HTML</span>
+                            </div>
+                            <span class="row-size">—</span>
+                            <span class="row-date">—</span>
+                        </a>
+                    </li>
+                    <li class="tree-item" data-name="project-management-mockup.html">
+                        <a class="tree-row" href="files 2/project-management-mockup.html">
+                            <div class="row-name">
+                                <span class="indent" style="width:20px"></span>
+                                <span class="chevron" style="visibility:hidden"></span>
+                                <span class="file-icon">
+                                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none"><rect x="3" y="3" width="18" height="18" rx="2" fill="rgba(249,115,22,0.2)" stroke="rgba(249,115,22,0.6)" stroke-width="1.5"/><path d="M7 8h10M7 12h7M7 16h5" stroke="rgba(249,115,22,0.9)" stroke-width="1.5" stroke-linecap="round"/></svg>
+                                </span>
+                                <span class="row-label file-link">project-management-mockup.html</span>
+                                <span class="type-badge badge-html">HTML</span>
+                            </div>
+                            <span class="row-size">—</span>
+                            <span class="row-date">—</span>
+                        </a>
+                    </li>
+                </ul>
+            </li>
+
+        </ul>
+
+        <div class="empty-state" id="emptyState">
+            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+            <div>검색 결과가 없습니다</div>
+        </div>
     </div>
 
-    <div class="divider"></div>
-
-    <footer>TaskFlow · seyongeo.github.io · 2026</footer>
-
+    <footer class="footer">TaskFlow · seyongeo.github.io · 2026</footer>
 </div>
+
+<script>
+    // ── Folder toggle ──
+    function toggleFolder(folderId) {
+        const children = document.getElementById('children-' + folderId);
+        const chevron = document.getElementById('chevron-' + folderId);
+        if (!children) return;
+        const isCollapsed = children.classList.contains('collapsed');
+        if (isCollapsed) {
+            children.classList.remove('collapsed');
+            chevron.classList.add('open');
+        } else {
+            children.classList.add('collapsed');
+            chevron.classList.remove('open');
+        }
+        // set max-height for animation
+        if (!children.classList.contains('collapsed')) {
+            children.style.maxHeight = children.scrollHeight + 'px';
+        } else {
+            children.style.maxHeight = '0';
+        }
+    }
+
+    // Init max-height for open folders
+    document.querySelectorAll('.folder-children:not(.collapsed)').forEach(el => {
+        el.style.maxHeight = el.scrollHeight + 'px';
+    });
+
+    // ── Expand / Collapse all ──
+    document.getElementById('expandAll').addEventListener('click', () => {
+        document.querySelectorAll('.folder-children').forEach(el => {
+            el.classList.remove('collapsed');
+            el.style.maxHeight = el.scrollHeight + 'px';
+        });
+        document.querySelectorAll('.chevron.open, .chevron').forEach(ch => {
+            if (ch.style.visibility !== 'hidden') ch.classList.add('open');
+        });
+    });
+    document.getElementById('collapseAll').addEventListener('click', () => {
+        document.querySelectorAll('.folder-children').forEach(el => {
+            el.classList.add('collapsed');
+            el.style.maxHeight = '0';
+        });
+        document.querySelectorAll('.chevron').forEach(ch => {
+            if (ch.style.visibility !== 'hidden') ch.classList.remove('open');
+        });
+    });
+
+    // ── Search / filter ──
+    const searchInput = document.getElementById('searchInput');
+    const searchClear = document.getElementById('searchClear');
+    const fileCount   = document.getElementById('fileCount');
+    const emptyState  = document.getElementById('emptyState');
+
+    function filterTree(query) {
+        const q = query.toLowerCase().trim();
+        const allItems = document.querySelectorAll('#fileTree .tree-item');
+        let visible = 0;
+
+        allItems.forEach(item => {
+            const name = (item.dataset.name || '').toLowerCase();
+            const isFolder = item.classList.contains('folder-item');
+
+            if (!q) {
+                item.style.display = '';
+                // restore folder children display
+                if (isFolder) {
+                    item.querySelectorAll('.tree-item').forEach(c => c.style.display = '');
+                }
+                visible++;
+                return;
+            }
+
+            if (isFolder) {
+                // check if folder name matches or any child matches
+                const children = item.querySelectorAll('.tree-item');
+                let childMatch = false;
+                children.forEach(child => {
+                    const cn = (child.dataset.name || '').toLowerCase();
+                    if (cn.includes(q)) {
+                        child.style.display = '';
+                        childMatch = true;
+                    } else {
+                        child.style.display = 'none';
+                    }
+                });
+                if (name.includes(q) || childMatch) {
+                    item.style.display = '';
+                    // expand folder on search
+                    const fc = item.querySelector('.folder-children');
+                    if (fc) { fc.classList.remove('collapsed'); fc.style.maxHeight = fc.scrollHeight + 'px'; }
+                    visible++;
+                } else {
+                    item.style.display = 'none';
+                }
+            } else {
+                if (name.includes(q)) {
+                    item.style.display = '';
+                    visible++;
+                } else {
+                    item.style.display = 'none';
+                }
+            }
+        });
+
+        // hide separator if needed
+        const sep = document.querySelector('.tree-section-sep');
+        if (sep) sep.style.display = q ? 'none' : '';
+
+        fileCount.textContent = q ? `${visible} 건 일치` : '14 items';
+        emptyState.style.display = visible === 0 ? 'block' : 'none';
+    }
+
+    searchInput.addEventListener('input', () => {
+        const q = searchInput.value;
+        searchClear.style.display = q ? 'block' : 'none';
+        filterTree(q);
+    });
+    searchClear.addEventListener('click', () => {
+        searchInput.value = '';
+        searchClear.style.display = 'none';
+        filterTree('');
+        searchInput.focus();
+    });
+</script>
 </body>
 </html>
