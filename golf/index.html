@@ -410,11 +410,12 @@ function EntryTab({members, sc, setSc, form, setForm, setShowPhoto, onSave, goEn
   </>);
 }
 
-function SettingsTab({saveError}) {
+function SettingsTab({saveError, onReset}) {
   const [pat, setPat] = useState(() => localStorage.getItem('amp99_github_pat') || '');
   const [apiKey, setApiKey] = useState(() => localStorage.getItem('amp99_apikey') || '');
   const [savedPat, setSavedPat] = useState(false);
   const [savedKey, setSavedKey] = useState(false);
+  const [resetConfirm, setResetConfirm] = useState(false);
 
   const savePat = () => {
     localStorage.setItem('amp99_github_pat', pat.trim());
@@ -426,6 +427,11 @@ function SettingsTab({saveError}) {
     else localStorage.removeItem('amp99_apikey');
     setSavedKey(true);
     setTimeout(() => setSavedKey(false), 2000);
+  };
+  const handleReset = () => {
+    if (!resetConfirm) { setResetConfirm(true); return; }
+    onReset();
+    setResetConfirm(false);
   };
 
   return (
@@ -453,6 +459,21 @@ function SettingsTab({saveError}) {
         </div>
         <button style={{...btn("p"),width:"100%"}} onClick={savePat}>PAT 저장</button>
         {savedPat && <div style={{marginTop:8,textAlign:"center",color:C.accent,fontSize:12}}>✓ 저장됨</div>}
+      </div>
+      <div style={{...cardSt}}>
+        <div style={{fontWeight:700,color:C.red,marginBottom:10}}>⚠️ 데이터 초기화</div>
+        <div style={{fontSize:12,color:C.dim,marginBottom:12}}>모든 회원 및 라운드 데이터를 삭제합니다. 이 작업은 되돌릴 수 없습니다.</div>
+        {resetConfirm && (
+          <div style={{background:'rgba(248,113,113,0.1)',border:`1px solid ${C.red}`,borderRadius:8,padding:"10px 12px",marginBottom:10,fontSize:12,color:C.red}}>
+            정말 삭제하시겠습니까? 다시 한번 버튼을 누르면 초기화됩니다.
+          </div>
+        )}
+        <div style={{display:"flex",gap:8}}>
+          <button style={{...btn("r"),flex:1}} onClick={handleReset}>
+            {resetConfirm ? "확인 — 초기화" : "데이터 초기화"}
+          </button>
+          {resetConfirm && <button style={{...btn(),flex:1}} onClick={()=>setResetConfirm(false)}>취소</button>}
+        </div>
       </div>
       {saveError && (
         <div style={{background:'rgba(248,113,113,0.1)',border:`1px solid ${C.red}`,borderRadius:10,padding:"12px 14px",color:C.red,fontSize:12}}>
@@ -509,6 +530,11 @@ function App() {
     } else {
       setSaveStatus('error'); setSaveError(result.error || '알 수 없는 오류');
     }
+  };
+
+  const handleReset = async () => {
+    setMembers([]); setRounds([]); setSel('');
+    await triggerSave([], []);
   };
 
   const gm = (id) => members.find(m => m.id === id) || {name:"?", gender:"남"};
@@ -757,7 +783,7 @@ function App() {
         </>)}
 
         {/* ── 설정 ── */}
-        {tab==="settings" && <SettingsTab saveError={saveError}/>}
+        {tab==="settings" && <SettingsTab saveError={saveError} onReset={handleReset}/>}
 
         {/* ── 통계 ── */}
         {tab==="stats" && (<>
