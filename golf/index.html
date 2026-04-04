@@ -450,11 +450,17 @@ function App() {
 
         {/* ── 성적 조회 ── */}
         {!loading && tab==="view" && cur && (<>
-          <select style={{...iSt,marginBottom:12}} value={sel} onChange={e=>setSel(e.target.value)}>
-            {[...rounds].sort((a,b)=>b.date.localeCompare(a.date)).map(r=>(
-              <option key={r.id} value={r.id}>{r.date} · {r.course} ({r.scores.length}명)</option>
-            ))}
-          </select>
+          <div style={{position:"relative",marginBottom:12}}>
+            <div style={{fontSize:11,color:C.dim,marginBottom:4}}>라운드 선택</div>
+            <div style={{position:"relative"}}>
+              <select style={{...iSt,paddingRight:36,appearance:"none",WebkitAppearance:"none",cursor:"pointer"}} value={sel} onChange={e=>setSel(e.target.value)}>
+                {[...rounds].sort((a,b)=>b.date.localeCompare(a.date)).map(r=>(
+                  <option key={r.id} value={r.id}>{r.date} · {r.course} ({r.scores.length}명)</option>
+                ))}
+              </select>
+              <span style={{position:"absolute",right:12,top:"50%",transform:"translateY(-50%)",pointerEvents:"none",color:C.dim,fontSize:12}}>▼</span>
+            </div>
+          </div>
 
           <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:7,marginBottom:12}}>
             {[
