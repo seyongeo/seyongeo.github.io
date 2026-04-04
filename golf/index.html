@@ -229,6 +229,104 @@ function PhotoModal({members, onClose, onApply}) {
   );
 }
 
+function EntryTab({members, sc, setSc, form, setForm, setShowPhoto, saveRound, goEntry, setTab, numIn}) {
+  const [addMid, setAddMid] = useState('');
+  const participating = Object.keys(sc);
+  const available = members.filter(m => !participating.includes(m.id));
+
+  const addParticipant = () => {
+    if (!addMid) return;
+    setSc(p => ({...p, [addMid]: {score:"", hd:"", buddies:0, pars:0, bogeys:0}}));
+    setAddMid('');
+  };
+  const removeParticipant = (id) => setSc(p => { const n={...p}; delete n[id]; return n; });
+
+  return (<>
+    <div style={{...cardSt,overflow:"hidden"}}>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
+        <div style={{fontWeight:700,color:C.accent}}>새 라운드 입력</div>
+        <button style={{...btn("g"),padding:"6px 12px",fontSize:12}} onClick={()=>setShowPhoto(true)}>📷 사진으로 입력</button>
+      </div>
+      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
+        <div style={{display:"flex",flexDirection:"column",gap:4,minWidth:0}}>
+          <label style={{fontSize:11,color:C.dim}}>날짜</label>
+          <input type="date" style={{...iSt,colorScheme:"dark",WebkitAppearance:"none",appearance:"none",lineHeight:"normal",padding:"9px 10px",minWidth:0}} value={form.date} onChange={e=>setForm(p=>({...p,date:e.target.value}))}/>
+        </div>
+        <div style={{display:"flex",flexDirection:"column",gap:4,minWidth:0}}>
+          <label style={{fontSize:11,color:C.dim}}>코스명</label>
+          <input type="text" style={{...iSt,lineHeight:"normal",padding:"9px 10px",minWidth:0}} value={form.course} onChange={e=>setForm(p=>({...p,course:e.target.value}))} placeholder="예: 남서울 CC"/>
+        </div>
+      </div>
+    </div>
+
+    {participating.length > 0 ? (<>
+      <div style={{fontSize:11,color:C.dim,marginBottom:8}}>참가자 {participating.length}명 · 핸디점수 자동계산</div>
+      <div style={{...cardSt,padding:0,overflow:"hidden"}}>
+        <div style={{overflowX:"auto"}}>
+          <table style={{width:"100%",borderCollapse:"collapse",minWidth:380}}>
+            <thead><tr>
+              {["이름","타수","핸디","핸디점수","버디","파","보기",""].map((h,i)=>(
+                <th key={i} style={{...thSt,textAlign:i===0?"left":"center",paddingLeft:i===0?8:5}}>{h}</th>
+              ))}
+            </tr></thead>
+            <tbody>
+              {participating.map(mid => {
+                const m = members.find(x=>x.id===mid) || {id:mid,name:"?",gender:"남"};
+                const es = sc[mid] || {};
+                const hs = es.score && es.hd!=="" ? hdScore(+es.score,+es.hd).toFixed(1) : "—";
+                return (
+                  <tr key={mid}>
+                    <td style={{...tdSt,textAlign:"left",paddingLeft:8,fontWeight:500,whiteSpace:"nowrap"}}>
+                      {m.name} <span style={{fontSize:10,color:m.gender==="여"?C.pink:C.blue}}>{m.gender}</span>
+                    </td>
+                    <td style={tdSt}>{numIn("score",mid,48)}</td>
+                    <td style={tdSt}>{numIn("hd",mid,44)}</td>
+                    <td style={{...tdSt,fontWeight:600,color:C.accent}}>{hs}</td>
+                    <td style={tdSt}>{numIn("buddies",mid,36)}</td>
+                    <td style={tdSt}>{numIn("pars",mid,36)}</td>
+                    <td style={tdSt}>{numIn("bogeys",mid,36)}</td>
+                    <td style={tdSt}>
+                      <button onClick={()=>removeParticipant(mid)}
+                        style={{background:"none",border:"none",color:C.dim,fontSize:15,cursor:"pointer",padding:"0 4px",lineHeight:1}}>✕</button>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </>) : (
+      <div style={{...cardSt,textAlign:"center",padding:"28px 16px",color:C.dim,fontSize:13}}>
+        참가자를 추가하거나 📷 사진으로 입력하세요
+      </div>
+    )}
+
+    {/* 참가자 추가 */}
+    {available.length > 0 && (
+      <div style={{display:"flex",gap:8,marginTop:10,alignItems:"center"}}>
+        <div style={{position:"relative",flex:1}}>
+          <select style={{...iSt,paddingRight:32,appearance:"none",WebkitAppearance:"none",cursor:"pointer"}}
+            value={addMid} onChange={e=>setAddMid(e.target.value)}>
+            <option value="">참가자 선택...</option>
+            {available.map(m=>(
+              <option key={m.id} value={m.id}>{m.name} ({m.gender})</option>
+            ))}
+          </select>
+          <span style={{position:"absolute",right:10,top:"50%",transform:"translateY(-50%)",pointerEvents:"none",color:C.dim,fontSize:11}}>▼</span>
+        </div>
+        <button style={{...btn("g"),whiteSpace:"nowrap"}} onClick={addParticipant}>+ 추가</button>
+      </div>
+    )}
+
+    <div style={{display:"flex",gap:8,marginTop:12,paddingBottom:16}}>
+      <button style={btn("p")} onClick={saveRound}>저장</button>
+      <button style={btn()} onClick={goEntry}>초기화</button>
+      <button style={btn()} onClick={()=>setTab("view")}>취소</button>
+    </div>
+  </>);
+}
+
 function SettingsTab({saveError}) {
   const [pat, setPat] = useState(() => localStorage.getItem('amp99_github_pat') || '');
   const [apiKey, setApiKey] = useState(() => localStorage.getItem('amp99_apikey') || '');
@@ -340,15 +438,13 @@ function App() {
 
   const goEntry = () => {
     setForm({date:new Date().toISOString().slice(0,10), course:""});
-    const init = {};
-    members.forEach(m => { init[m.id] = {on:true, score:"", hd:"", buddies:0, pars:0, bogeys:0}; });
-    setSc(init); setTab("entry");
+    setSc({}); setTab("entry");
   };
 
   const saveRound = () => {
     if (!form.date || !form.course.trim()) { alert("날짜와 코스명을 입력하세요"); return; }
     const list = Object.entries(sc)
-      .filter(([,v]) => v.on && v.score !== "" && v.hd !== "")
+      .filter(([,v]) => v.score !== "" && v.hd !== "")
       .map(([mid,v]) => ({memberId:mid, score:+v.score, hd:+v.hd, buddies:+v.buddies||0, pars:+v.pars||0, bogeys:+v.bogeys||0}));
     if (!list.length) { alert("성적을 입력하세요"); return; }
     const nr = {id:uid(), date:form.date, course:form.course, scores:list};
@@ -385,13 +481,13 @@ function App() {
       setMembers(p => [...p, ...created]);
       created.forEach((m, i) => {
         const nm = newMembers[i];
-        matched[m.id] = {on:true, score:String(nm.score||''), hd:String(nm.hd||''), buddies:nm.buddies||0, pars:nm.pars||0, bogeys:nm.bogeys||0};
+        matched[m.id] = {score:String(nm.score||''), hd:String(nm.hd||''), buddies:nm.buddies||0, pars:nm.pars||0, bogeys:nm.bogeys||0};
       });
       addedNames = created.map(m => m.name);
     }
     setSc(p => {
       const next = {...p};
-      Object.entries(matched).forEach(([id, vals]) => { next[id] = {...(next[id]||{}), ...vals}; });
+      Object.entries(matched).forEach(([id, vals]) => { next[id] = {score:"", hd:"", buddies:0, pars:0, bogeys:0, ...vals}; });
       return next;
     });
     const lines = [`${total}명 중 ${Object.keys(matched).length}명 자동 입력`];
@@ -519,63 +615,10 @@ function App() {
         </>)}
 
         {/* ── 성적 입력 ── */}
-        {tab==="entry" && (<>
-          <div style={{...cardSt,overflow:"hidden"}}>
-            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
-              <div style={{fontWeight:700,color:C.accent}}>새 라운드 입력</div>
-              <button style={{...btn("g"),padding:"6px 12px",fontSize:12}} onClick={()=>setShowPhoto(true)}>📷 사진으로 입력</button>
-            </div>
-            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
-              <div style={{display:"flex",flexDirection:"column",gap:4,minWidth:0}}>
-                <label style={{fontSize:11,color:C.dim}}>날짜</label>
-                <input type="date" style={{...iSt,colorScheme:"dark",WebkitAppearance:"none",appearance:"none",lineHeight:"normal",padding:"9px 10px",minWidth:0}} value={form.date} onChange={e=>setForm(p=>({...p,date:e.target.value}))}/>
-              </div>
-              <div style={{display:"flex",flexDirection:"column",gap:4,minWidth:0}}>
-                <label style={{fontSize:11,color:C.dim}}>코스명</label>
-                <input type="text" style={{...iSt,lineHeight:"normal",padding:"9px 10px",minWidth:0}} value={form.course} onChange={e=>setForm(p=>({...p,course:e.target.value}))} placeholder="예: 남서울 CC"/>
-              </div>
-            </div>
-          </div>
-          <div style={{fontSize:11,color:C.dim,marginBottom:8}}>미참가 회원은 체크 해제 · 핸디점수 자동계산</div>
-          <div style={{...cardSt,padding:0,overflow:"hidden"}}>
-            <div style={{overflowX:"auto"}}>
-              <table style={{width:"100%",borderCollapse:"collapse",minWidth:360}}>
-                <thead><tr>
-                  {["✓","이름","타수","핸디","핸디점수","버디","파","보기"].map((h,i)=>(
-                    <th key={i} style={{...thSt,textAlign:i===1?"left":"center",paddingLeft:i===1?8:5}}>{h}</th>
-                  ))}
-                </tr></thead>
-                <tbody>
-                  {members.map(m => {
-                    const es = sc[m.id] || {};
-                    const off = es.on === false;
-                    const upd = (f,v) => setSc(p => ({...p,[m.id]:{...p[m.id],[f]:v}}));
-                    const hs = es.score && es.hd!=="" ? hdScore(+es.score,+es.hd).toFixed(1) : "—";
-                    return (
-                      <tr key={m.id} style={{opacity:off?0.4:1}}>
-                        <td style={tdSt}><input type="checkbox" checked={!off} onChange={e=>upd("on",e.target.checked)}/></td>
-                        <td style={{...tdSt,textAlign:"left",paddingLeft:8,fontWeight:500,whiteSpace:"nowrap"}}>
-                          {m.name} <span style={{fontSize:10,color:m.gender==="여"?C.pink:C.blue}}>{m.gender}</span>
-                        </td>
-                        <td style={tdSt}>{numIn("score",m.id,48)}</td>
-                        <td style={tdSt}>{numIn("hd",m.id,44)}</td>
-                        <td style={{...tdSt,fontWeight:600,color:C.accent}}>{hs}</td>
-                        <td style={tdSt}>{numIn("buddies",m.id,36)}</td>
-                        <td style={tdSt}>{numIn("pars",m.id,36)}</td>
-                        <td style={tdSt}>{numIn("bogeys",m.id,36)}</td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-          </div>
-          <div style={{display:"flex",gap:8,marginTop:12,paddingBottom:16}}>
-            <button style={btn("p")} onClick={saveRound}>저장</button>
-            <button style={btn()} onClick={goEntry}>초기화</button>
-            <button style={btn()} onClick={()=>setTab("view")}>취소</button>
-          </div>
-        </>)}
+        {tab==="entry" && (<EntryTab
+          members={members} sc={sc} setSc={setSc} form={form} setForm={setForm}
+          setShowPhoto={setShowPhoto} saveRound={saveRound} goEntry={goEntry} setTab={setTab} numIn={numIn}
+        />)}
 
         {/* ── 회원 관리 ── */}
         {tab==="members" && (<>
