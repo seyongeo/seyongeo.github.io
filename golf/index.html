@@ -229,17 +229,38 @@ function PhotoModal({members, onClose, onApply}) {
   );
 }
 
-function EntryTab({members, sc, setSc, form, setForm, setShowPhoto, saveRound, goEntry, setTab, numIn}) {
-  const [addMid, setAddMid] = useState('');
-  const participating = Object.keys(sc);
-  const available = members.filter(m => !participating.includes(m.id));
+function EntryTab({members, sc, setSc, form, setForm, setShowPhoto, onSave, goEntry, setTab, numIn}) {
+  const [pending, setPending] = useState([]); // [{tempId, memberId, score, hd, buddies, pars, bogeys}]
 
-  const addParticipant = () => {
-    if (!addMid) return;
-    setSc(p => ({...p, [addMid]: {score:"", hd:"", buddies:0, pars:0, bogeys:0}}));
-    setAddMid('');
-  };
+  const usedIds = [...Object.keys(sc), ...pending.map(r=>r.memberId).filter(Boolean)];
+  const available = members.filter(m => !usedIds.includes(m.id));
+
+  const addRow = () => setPending(p => [...p, {tempId:uid(), memberId:'', score:'', hd:'', buddies:'', pars:'', bogeys:''}]);
+
+  const updPending = (tempId, field, val) =>
+    setPending(p => p.map(r => r.tempId===tempId ? {...r, [field]:val} : r));
+
+  const removePending = (tempId) => setPending(p => p.filter(r => r.tempId!==tempId));
   const removeParticipant = (id) => setSc(p => { const n={...p}; delete n[id]; return n; });
+
+  const handleSave = () => {
+    // merge pending rows that have a member selected into sc before saving
+    const extra = {};
+    for (const r of pending) {
+      if (r.memberId) extra[r.memberId] = {score:r.score, hd:r.hd, buddies:r.buddies||0, pars:r.pars||0, bogeys:r.bogeys||0};
+    }
+    onSave({...sc, ...extra});
+  };
+
+  const participating = Object.keys(sc);
+  const hasRows = participating.length > 0 || pending.length > 0;
+
+  const numCell = (val, onChange, w=48) => (
+    <input type="number" min="0"
+      style={{background:"#060c06",border:`1px solid ${C.border}`,color:C.text,borderRadius:5,
+        padding:"4px 3px",width:w,textAlign:"center",fontSize:12,outline:"none",fontFamily:"inherit"}}
+      value={val ?? ""} onChange={e=>onChange(e.target.value)} placeholder="0"/>
+  );
 
   return (<>
     <div style={{...cardSt,overflow:"hidden"}}>
@@ -250,26 +271,31 @@ function EntryTab({members, sc, setSc, form, setForm, setShowPhoto, saveRound, g
       <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
         <div style={{display:"flex",flexDirection:"column",gap:4,minWidth:0}}>
           <label style={{fontSize:11,color:C.dim}}>날짜</label>
-          <input type="date" style={{...iSt,colorScheme:"dark",WebkitAppearance:"none",appearance:"none",lineHeight:"normal",padding:"9px 10px",minWidth:0}} value={form.date} onChange={e=>setForm(p=>({...p,date:e.target.value}))}/>
+          <input type="date" style={{...iSt,colorScheme:"dark",WebkitAppearance:"none",appearance:"none",lineHeight:"normal",padding:"9px 10px",minWidth:0}}
+            value={form.date} onChange={e=>setForm(p=>({...p,date:e.target.value}))}/>
         </div>
         <div style={{display:"flex",flexDirection:"column",gap:4,minWidth:0}}>
           <label style={{fontSize:11,color:C.dim}}>코스명</label>
-          <input type="text" style={{...iSt,lineHeight:"normal",padding:"9px 10px",minWidth:0}} value={form.course} onChange={e=>setForm(p=>({...p,course:e.target.value}))} placeholder="예: 남서울 CC"/>
+          <input type="text" style={{...iSt,lineHeight:"normal",padding:"9px 10px",minWidth:0}}
+            value={form.course} onChange={e=>setForm(p=>({...p,course:e.target.value}))} placeholder="예: 남서울 CC"/>
         </div>
       </div>
     </div>
 
-    {participating.length > 0 ? (<>
-      <div style={{fontSize:11,color:C.dim,marginBottom:8}}>참가자 {participating.length}명 · 핸디점수 자동계산</div>
+    {hasRows ? (<>
+      <div style={{fontSize:11,color:C.dim,marginBottom:8}}>
+        참가자 {participating.length + pending.filter(r=>r.memberId).length}명 · 핸디점수 자동계산
+      </div>
       <div style={{...cardSt,padding:0,overflow:"hidden"}}>
         <div style={{overflowX:"auto"}}>
-          <table style={{width:"100%",borderCollapse:"collapse",minWidth:380}}>
+          <table style={{width:"100%",borderCollapse:"collapse",minWidth:400}}>
             <thead><tr>
               {["이름","타수","핸디","핸디점수","버디","파","보기",""].map((h,i)=>(
                 <th key={i} style={{...thSt,textAlign:i===0?"left":"center",paddingLeft:i===0?8:5}}>{h}</th>
               ))}
             </tr></thead>
             <tbody>
+              {/* 사진/기존 추가된 행 */}
               {participating.map(mid => {
                 const m = members.find(x=>x.id===mid) || {id:mid,name:"?",gender:"남"};
                 const es = sc[mid] || {};
@@ -287,7 +313,37 @@ function EntryTab({members, sc, setSc, form, setForm, setShowPhoto, saveRound, g
                     <td style={tdSt}>{numIn("bogeys",mid,36)}</td>
                     <td style={tdSt}>
                       <button onClick={()=>removeParticipant(mid)}
-                        style={{background:"none",border:"none",color:C.dim,fontSize:15,cursor:"pointer",padding:"0 4px",lineHeight:1}}>✕</button>
+                        style={{background:"none",border:"none",color:C.dim,fontSize:15,cursor:"pointer",padding:"0 4px"}}>✕</button>
+                    </td>
+                  </tr>
+                );
+              })}
+              {/* 수동 추가 중인 빈 행 */}
+              {pending.map(r => {
+                const selM = members.find(x=>x.id===r.memberId);
+                const hs = r.score && r.hd!=="" ? hdScore(+r.score,+r.hd).toFixed(1) : "—";
+                return (
+                  <tr key={r.tempId} style={{background:"rgba(74,222,128,0.04)"}}>
+                    <td style={{...tdSt,paddingLeft:4,paddingRight:4,minWidth:90}}>
+                      <div style={{position:"relative"}}>
+                        <select style={{...iSt,padding:"4px 22px 4px 6px",fontSize:12,appearance:"none",WebkitAppearance:"none",cursor:"pointer"}}
+                          value={r.memberId} onChange={e=>updPending(r.tempId,"memberId",e.target.value)}>
+                          <option value="">이름 선택</option>
+                          {available.map(m=><option key={m.id} value={m.id}>{m.name}</option>)}
+                          {selM && <option value={selM.id}>{selM.name}</option>}
+                        </select>
+                        <span style={{position:"absolute",right:5,top:"50%",transform:"translateY(-50%)",pointerEvents:"none",color:C.dim,fontSize:10}}>▼</span>
+                      </div>
+                    </td>
+                    <td style={tdSt}>{numCell(r.score, v=>updPending(r.tempId,"score",v), 48)}</td>
+                    <td style={tdSt}>{numCell(r.hd,    v=>updPending(r.tempId,"hd",v),    44)}</td>
+                    <td style={{...tdSt,fontWeight:600,color:C.accent}}>{hs}</td>
+                    <td style={tdSt}>{numCell(r.buddies, v=>updPending(r.tempId,"buddies",v), 36)}</td>
+                    <td style={tdSt}>{numCell(r.pars,    v=>updPending(r.tempId,"pars",v),    36)}</td>
+                    <td style={tdSt}>{numCell(r.bogeys,  v=>updPending(r.tempId,"bogeys",v),  36)}</td>
+                    <td style={tdSt}>
+                      <button onClick={()=>removePending(r.tempId)}
+                        style={{background:"none",border:"none",color:C.dim,fontSize:15,cursor:"pointer",padding:"0 4px"}}>✕</button>
                     </td>
                   </tr>
                 );
@@ -302,26 +358,10 @@ function EntryTab({members, sc, setSc, form, setForm, setShowPhoto, saveRound, g
       </div>
     )}
 
-    {/* 참가자 추가 */}
-    {available.length > 0 && (
-      <div style={{display:"flex",gap:8,marginTop:10,alignItems:"center"}}>
-        <div style={{position:"relative",flex:1}}>
-          <select style={{...iSt,paddingRight:32,appearance:"none",WebkitAppearance:"none",cursor:"pointer"}}
-            value={addMid} onChange={e=>setAddMid(e.target.value)}>
-            <option value="">참가자 선택...</option>
-            {available.map(m=>(
-              <option key={m.id} value={m.id}>{m.name} ({m.gender})</option>
-            ))}
-          </select>
-          <span style={{position:"absolute",right:10,top:"50%",transform:"translateY(-50%)",pointerEvents:"none",color:C.dim,fontSize:11}}>▼</span>
-        </div>
-        <button style={{...btn("g"),whiteSpace:"nowrap"}} onClick={addParticipant}>+ 추가</button>
-      </div>
-    )}
-
-    <div style={{display:"flex",gap:8,marginTop:12,paddingBottom:16}}>
-      <button style={btn("p")} onClick={saveRound}>저장</button>
-      <button style={btn()} onClick={goEntry}>초기화</button>
+    <div style={{display:"flex",gap:8,marginTop:12,paddingBottom:16,flexWrap:"wrap"}}>
+      <button style={btn("p")} onClick={handleSave}>저장</button>
+      <button style={{...btn("g")}} onClick={addRow}>+ 참가자 추가</button>
+      <button style={btn()} onClick={()=>{goEntry();setPending([])}}>초기화</button>
       <button style={btn()} onClick={()=>setTab("view")}>취소</button>
     </div>
   </>);
@@ -441,9 +481,9 @@ function App() {
     setSc({}); setTab("entry");
   };
 
-  const saveRound = () => {
+  const saveRound = (mergedSc) => {
     if (!form.date || !form.course.trim()) { alert("날짜와 코스명을 입력하세요"); return; }
-    const list = Object.entries(sc)
+    const list = Object.entries(mergedSc)
       .filter(([,v]) => v.score !== "" && v.hd !== "")
       .map(([mid,v]) => ({memberId:mid, score:+v.score, hd:+v.hd, buddies:+v.buddies||0, pars:+v.pars||0, bogeys:+v.bogeys||0}));
     if (!list.length) { alert("성적을 입력하세요"); return; }
@@ -617,7 +657,7 @@ function App() {
         {/* ── 성적 입력 ── */}
         {tab==="entry" && (<EntryTab
           members={members} sc={sc} setSc={setSc} form={form} setForm={setForm}
-          setShowPhoto={setShowPhoto} saveRound={saveRound} goEntry={goEntry} setTab={setTab} numIn={numIn}
+          setShowPhoto={setShowPhoto} onSave={saveRound} goEntry={goEntry} setTab={setTab} numIn={numIn}
         />)}
 
         {/* ── 회원 관리 ── */}
