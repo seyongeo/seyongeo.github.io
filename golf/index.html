@@ -181,7 +181,7 @@ function PhotoModal({members, onClose, onApply}) {
             role: 'user',
             content: [
               {type:'image', source:{type:'base64', media_type:imgType, data:imgData}},
-              {type:'text', text:'이 골프 성적표 이미지에서 각 선수의 성적을 JSON 배열로 추출해주세요. 형식: [{name, score, hd, buddies, pars, bogeys}]. 핸디(hd)는 소수점 포함 숫자, 나머지는 정수. 반드시 JSON만 응답하세요.'},
+              {type:'text', text:'이 골프 성적표 이미지에서 각 선수의 성적을 JSON 배열로 추출해주세요. 형식: [{name, gender, score, hd, buddies, pars, bogeys}]. gender는 "남" 또는 "여"(표에 표시된 경우), hd(핸디)는 소수점 포함 숫자, 나머지는 정수. 반드시 JSON만 응답하세요.'},
             ],
           }],
         }),
@@ -193,13 +193,16 @@ function PhotoModal({members, onClose, onApply}) {
       if (!jsonStr) throw new Error('JSON 파싱 실패');
       const extracted = JSON.parse(jsonStr);
       const matched = {};
+      const newMembers = [];
       extracted.forEach(row => {
         const member = members.find(m => m.name === row.name || m.name.includes(row.name) || row.name.includes(m.name));
         if (member) {
           matched[member.id] = {on:true, score:String(row.score||''), hd:String(row.hd||''), buddies:row.buddies||0, pars:row.pars||0, bogeys:row.bogeys||0};
+        } else {
+          newMembers.push({name:row.name, gender:row.gender||'남', score:row.score, hd:row.hd, buddies:row.buddies||0, pars:row.pars||0, bogeys:row.bogeys||0});
         }
       });
-      onApply(matched, extracted.length);
+      onApply(matched, newMembers, extracted.length);
       onClose();
     } catch(e) {
       setError('오류: ' + (e.message || String(e)));
@@ -318,13 +321,25 @@ function App() {
     setMf({name:"", gender:"남"});
   };
 
-  const applyPhoto = (matched, total) => {
+  const applyPhoto = (matched, newMembers, total) => {
+    let addedNames = [];
+    if (newMembers.length > 0) {
+      const created = newMembers.map(nm => ({id:uid(), name:nm.name, gender:nm.gender||'남'}));
+      setMembers(p => [...p, ...created]);
+      created.forEach((m, i) => {
+        const nm = newMembers[i];
+        matched[m.id] = {on:true, score:String(nm.score||''), hd:String(nm.hd||''), buddies:nm.buddies||0, pars:nm.pars||0, bogeys:nm.bogeys||0};
+      });
+      addedNames = created.map(m => m.name);
+    }
     setSc(p => {
       const next = {...p};
       Object.entries(matched).forEach(([id, vals]) => { next[id] = {...(next[id]||{}), ...vals}; });
       return next;
     });
-    alert(`${total}명 중 ${Object.keys(matched).length}명 자동 입력되었습니다.`);
+    const lines = [`${total}명 중 ${Object.keys(matched).length}명 자동 입력`];
+    if (addedNames.length) lines.push(`신규 회원 추가: ${addedNames.join(', ')}`);
+    alert(lines.join('\n'));
   };
 
   const stats = members.map(m => {
