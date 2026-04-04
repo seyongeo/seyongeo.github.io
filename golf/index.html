@@ -29,7 +29,7 @@ const C = {
   dim:"#4d754d", gold:"#fbbf24", silver:"#94a3b8", bronze:"#b87333",
   pink:"#f9a8d4", blue:"#93c5fd", red:"#f87171",
 };
-const hdScore = (s,h) => parseFloat((s - h).toFixed(1));
+const hdScore = (s) => s - 72;
 const uid = () => Math.random().toString(36).slice(2,9);
 const avg = (a) => a.length ? a.reduce((x,y)=>x+y,0)/a.length : 0;
 const rankColor = (r) => r===1?C.gold:r===2?C.silver:r===3?C.bronze:C.text;
@@ -209,7 +209,7 @@ STEP 4: 장타(longest)상, 니어핀(nearest)상 수상자를 찾으세요 (★
 - nearest: 니어핀상 수상 여부 (true/false)
 
 【중요】hd는 신페리오 "HD값(핸디캡)"이 아니라 신페리오 "점수(net score)"입니다!
-【검증】모든 선수가 포함되었는지, 신페리오 점수가 그로스 타수보다 작은지 확인 후 응답하세요.
+【검증】모든 선수가 누락 없이 포함되었는지, 각 선수의 신페리오 점수가 신페리오 구역에서 직접 읽은 값과 일치하는지 확인 후 응답하세요.
 JSON 배열만 응답하세요. 설명 없이.`},
             ],
           }],
@@ -342,7 +342,7 @@ function EntryTab({members, sc, setSc, form, setForm, setShowPhoto, onSave, goEn
               {participating.map(mid => {
                 const m = members.find(x=>x.id===mid) || {id:mid,name:"?",gender:"남"};
                 const es = sc[mid] || {};
-                const hs = es.score!=='' && es.hd!=='' ? hdScore(+es.score,+es.hd).toFixed(1) : "—";
+                const hs = es.score!=='' ? hdScore(+es.score).toString() : "—";
                 return (
                   <tr key={mid}>
                     <td style={{...tdSt,textAlign:"left",paddingLeft:8,fontWeight:500,whiteSpace:"nowrap"}}>
@@ -364,7 +364,7 @@ function EntryTab({members, sc, setSc, form, setForm, setShowPhoto, onSave, goEn
                 );
               })}
               {pending.map(r => {
-                const hs = r.score!=='' && r.hd!=='' ? hdScore(+r.score,+r.hd).toFixed(1) : "—";
+                const hs = r.score!=='' ? hdScore(+r.score).toString() : "—";
                 return (
                   <tr key={r.tempId} style={{background:"rgba(74,222,128,0.04)"}}>
                     <td style={{...tdSt,paddingLeft:4,paddingRight:2,minWidth:72}}>
@@ -509,7 +509,7 @@ function App() {
 
   const gm = (id) => members.find(m => m.id === id) || {name:"?", gender:"남"};
   const cur = rounds.find(r => r.id === sel) || rounds[0];
-  const enrich = (r) => r.scores.map(s => ({...s, hs:hdScore(s.score, s.hd), member:gm(s.memberId)}));
+  const enrich = (r) => r.scores.map(s => ({...s, hs:hdScore(s.score), member:gm(s.memberId)}));
   const gross = cur ? enrich(cur).sort((a,b)=>a.score-b.score).map((s,i)=>({...s,rank:i+1})) : [];
   const perio = cur ? enrich(cur).sort((a,b)=>a.hd-b.hd).map((s,i)=>({...s,rank:i+1})) : [];
   const disp  = mode === "perio" ? perio : gross;
@@ -664,7 +664,7 @@ function App() {
                 <thead><tr>
                   {(mode==="gross"
                     ? ["순위","이름","","스코어","핸디","신페리오 점수","버디","파","보기","롱기","니어"]
-                    : ["순위","이름","","신페리오 점수","핸디","스코어","버디","파","보기","롱기","니어"]
+                    : ["순위","이름","","신페리오 점수","스코어","핸디","버디","파","보기","롱기","니어"]
                   ).map((h,i)=>(
                     <th key={i} style={{...thSt,textAlign:i===1?"left":"center",paddingLeft:i===1?8:3,paddingRight:3}}>{h}</th>
                   ))}
@@ -681,12 +681,12 @@ function App() {
                       <td style={{...tdSt,padding:"9px 3px"}}><span style={gTag(row.member.gender)}>{row.member.gender}</span></td>
                       {mode==="gross" ? (<>
                         <td style={{...tdSt,fontWeight:700,color:row.rank<=3?rankColor(row.rank):C.text,padding:"9px 3px"}}>{row.score}</td>
-                        <td style={{...tdSt,color:C.dim,padding:"9px 3px"}}>{row.hs.toFixed(1)}</td>
+                        <td style={{...tdSt,color:C.dim,padding:"9px 3px"}}>{row.hs}</td>
                         <td style={{...tdSt,fontWeight:600,color:C.accent,padding:"9px 3px"}}>{parseFloat(row.hd).toFixed(1)}</td>
                       </>) : (<>
                         <td style={{...tdSt,fontWeight:700,color:row.rank<=3?rankColor(row.rank):C.accent,padding:"9px 3px"}}>{parseFloat(row.hd).toFixed(1)}</td>
-                        <td style={{...tdSt,color:C.dim,padding:"9px 3px"}}>{row.hs.toFixed(1)}</td>
                         <td style={{...tdSt,fontWeight:600,color:C.text,padding:"9px 3px"}}>{row.score}</td>
+                        <td style={{...tdSt,color:C.dim,padding:"9px 3px"}}>{row.hs}</td>
                       </>)}
                       <td style={{...tdSt,color:row.buddies>0?C.accent:C.dim,padding:"9px 3px"}}>{row.buddies>0?`★${row.buddies}`:"—"}</td>
                       <td style={{...tdSt,padding:"9px 3px"}}>{row.pars}</td>
@@ -798,7 +798,7 @@ function App() {
                         <td style={{...tdSt,fontSize:10,color:C.dim}}>{h.course}</td>
                         <td style={{...tdSt,fontWeight:700,color:h.score===m.best?C.gold:C.text}}>{h.score}</td>
                         <td style={{...tdSt,fontWeight:600,color:C.accent}}>{parseFloat(h.hd).toFixed(1)}</td>
-                        <td style={{...tdSt,color:C.dim}}>{hdScore(h.score,h.hd).toFixed(1)}</td>
+                        <td style={{...tdSt,color:C.dim}}>{hdScore(h.score)}</td>
                         <td style={{...tdSt,color:h.buddies>0?C.accent:C.dim}}>{h.buddies>0?`★${h.buddies}`:"—"}</td>
                       </tr>
                     ))}
