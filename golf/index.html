@@ -70,7 +70,7 @@ function parseMD(text) {
       });
       rounds.push({id:idMatch[1], date:dateMatch[1], course:courseMatch[1].trim(), scores});
     });
-    if (members.length && rounds.length) return {members, rounds};
+    return {members, rounds};
   } catch(e) {}
   return null;
 }
@@ -441,7 +441,7 @@ function App() {
       .then(r => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.text(); })
       .then(text => {
         const parsed = parseMD(text);
-        if (!parsed) throw new Error('golf-scores.md 파싱 실패');
+        if (!parsed) throw new Error('파일 형식 오류');
         setMembers(parsed.members); setRounds(parsed.rounds);
         setSel(parsed.rounds.length ? [...parsed.rounds].sort((a,b)=>b.date.localeCompare(a.date))[0].id : '');
       })
