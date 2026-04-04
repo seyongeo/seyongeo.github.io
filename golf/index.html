@@ -34,43 +34,6 @@ const uid = () => Math.random().toString(36).slice(2,9);
 const avg = (a) => a.length ? a.reduce((x,y)=>x+y,0)/a.length : 0;
 const rankColor = (r) => r===1?C.gold:r===2?C.silver:r===3?C.bronze:C.text;
 
-const FALLBACK_MEMBERS = [
-  {id:"m1",name:"김정섭",gender:"남"},{id:"m2",name:"전재원",gender:"남"},
-  {id:"m3",name:"전태욱",gender:"남"},{id:"m4",name:"안월한",gender:"남"},
-  {id:"m5",name:"김봉섭",gender:"남"},{id:"m6",name:"김진백",gender:"남"},
-  {id:"m7",name:"강한승",gender:"남"},{id:"m8",name:"장공례",gender:"여"},
-  {id:"m9",name:"박윤해",gender:"남"},{id:"m10",name:"어세룡",gender:"남"},
-  {id:"m11",name:"김앤드류",gender:"남"},{id:"m12",name:"고범규",gender:"남"},
-  {id:"m13",name:"김대영",gender:"남"},{id:"m14",name:"권민근",gender:"남"},
-  {id:"m15",name:"길정섭",gender:"남"},{id:"m16",name:"채산성",gender:"남"},
-  {id:"m17",name:"전소영",gender:"여"},{id:"m18",name:"서원석",gender:"남"},
-  {id:"m19",name:"정경록",gender:"남"},{id:"m20",name:"김민희",gender:"여"},
-];
-const FALLBACK_ROUNDS = [{
-  id:"r202603", date:"2026-03-26", course:"남서울 CC",
-  scores:[
-    {memberId:"m1",score:75,hd:2.4,buddies:2,pars:11,bogeys:5},
-    {memberId:"m2",score:84,hd:10.8,buddies:0,pars:7,bogeys:10},
-    {memberId:"m3",score:85,hd:10.8,buddies:0,pars:8,bogeys:7},
-    {memberId:"m4",score:85,hd:10.8,buddies:0,pars:7,bogeys:9},
-    {memberId:"m5",score:85,hd:8.4,buddies:1,pars:6,bogeys:8},
-    {memberId:"m6",score:85,hd:10.8,buddies:1,pars:6,bogeys:8},
-    {memberId:"m7",score:88,hd:12,buddies:0,pars:5,bogeys:11},
-    {memberId:"m8",score:88,hd:12,buddies:0,pars:5,bogeys:10},
-    {memberId:"m9",score:89,hd:14.4,buddies:0,pars:5,bogeys:10},
-    {memberId:"m10",score:89,hd:15.6,buddies:0,pars:5,bogeys:9},
-    {memberId:"m11",score:90,hd:18,buddies:1,pars:6,bogeys:5},
-    {memberId:"m12",score:91,hd:18,buddies:0,pars:4,bogeys:9},
-    {memberId:"m13",score:92,hd:14.4,buddies:0,pars:2,bogeys:12},
-    {memberId:"m14",score:92,hd:20.4,buddies:0,pars:5,bogeys:8},
-    {memberId:"m15",score:92,hd:15.6,buddies:0,pars:6,bogeys:5},
-    {memberId:"m16",score:94,hd:20.4,buddies:0,pars:7,bogeys:4},
-    {memberId:"m17",score:95,hd:18,buddies:0,pars:4,bogeys:6},
-    {memberId:"m18",score:95,hd:14.4,buddies:0,pars:3,bogeys:9},
-    {memberId:"m19",score:96,hd:20.4,buddies:1,pars:4,bogeys:6},
-    {memberId:"m20",score:98,hd:19.2,buddies:0,pars:2,bogeys:10},
-  ],
-}];
 
 function parseMD(text) {
   try {
@@ -112,7 +75,7 @@ function parseMD(text) {
   return null;
 }
 
-function exportMD(members, rounds) {
+function generateMD(members, rounds) {
   let md = '# 서울대 AMP99 골프 성적 데이터\n\n> 이 파일은 서울대 AMP99 월례회 성적 데이터입니다.\n> golf-manager.html 앱이 이 파일을 읽어 초기 데이터를 로드합니다.\n\n---\n\n## 회원 목록\n\n| id | 이름 | 성별 |\n|----|------|------|\n';
   members.forEach(m => { md += `| ${m.id} | ${m.name} | ${m.gender} |\n`; });
   md += '\n---\n\n## 라운드 기록\n';
@@ -123,11 +86,45 @@ function exportMD(members, rounds) {
       md += `| ${s.memberId} | ${m.name} | ${s.score} | ${s.hd} | ${s.buddies} | ${s.pars} | ${s.bogeys} |\n`;
     });
   });
+  return md;
+}
+
+function downloadMD(members, rounds) {
+  const md = generateMD(members, rounds);
   const blob = new Blob([md], {type:'text/markdown'});
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url; a.download = 'golf-scores.md'; a.click();
   URL.revokeObjectURL(url);
+}
+
+async function saveMDToGitHub(members, rounds) {
+  const pat = localStorage.getItem('amp99_github_pat');
+  if (!pat) {
+    downloadMD(members, rounds);
+    alert('GitHub PAT가 설정되지 않아 MD 파일을 다운로드했습니다.\n파일을 직접 커밋해 주세요.\n(설정 탭에서 PAT를 입력하면 자동 저장됩니다.)');
+    return {ok: false, error: 'no_pat'};
+  }
+  try {
+    const apiBase = 'https://api.github.com/repos/seyongeo/seyongeo.github.io/contents/golf/golf-scores.md';
+    const shaRes = await fetch(apiBase, {
+      headers: {'Authorization': `token ${pat}`, 'Accept': 'application/vnd.github+json'},
+    });
+    if (!shaRes.ok) { const t = await shaRes.text(); throw new Error(`SHA 조회 실패: ${shaRes.status} ${t}`); }
+    const shaData = await shaRes.json();
+    const sha = shaData.sha;
+    const mdContent = generateMD(members, rounds);
+    const encoded = btoa(unescape(encodeURIComponent(mdContent)));
+    const putRes = await fetch(apiBase, {
+      method: 'PUT',
+      headers: {'Authorization': `token ${pat}`, 'Accept': 'application/vnd.github+json', 'Content-Type': 'application/json'},
+      body: JSON.stringify({message: 'Update golf-scores.md via AMP99 Golf Manager', content: encoded, sha}),
+    });
+    if (!putRes.ok) { const t = await putRes.text(); throw new Error(`저장 실패: ${putRes.status} ${t}`); }
+    return {ok: true};
+  } catch(e) {
+    return {ok: false, error: e.message || String(e)};
+  }
 }
 
 const iSt = {background:"#060c06",border:`1px solid ${C.border}`,color:C.text,borderRadius:7,padding:"8px 10px",fontSize:13,outline:"none",width:"100%",boxSizing:"border-box",fontFamily:"inherit"};
@@ -238,6 +235,37 @@ function PhotoModal({members, onClose, onApply}) {
   );
 }
 
+function SettingsTab({saveError}) {
+  const [pat, setPat] = useState(() => localStorage.getItem('amp99_github_pat') || '');
+  const [saved, setSaved] = useState(false);
+  const savePat = () => {
+    localStorage.setItem('amp99_github_pat', pat.trim());
+    setSaved(true);
+    setTimeout(() => setSaved(false), 2000);
+  };
+  return (
+    <div>
+      <div style={{...cardSt}}>
+        <div style={{fontWeight:700,color:C.accent,marginBottom:10}}>GitHub 설정</div>
+        <div style={{marginBottom:14}}>
+          <div style={{fontSize:11,color:C.dim,marginBottom:4}}>GitHub Personal Access Token (MD 파일 저장에 필요)</div>
+          <input style={iSt} type="password" value={pat} placeholder="ghp_..." onChange={e=>setPat(e.target.value)}/>
+          <div style={{fontSize:10,color:C.dim,marginTop:4}}>
+            PAT는 <code style={{background:C.surface,padding:"1px 4px",borderRadius:3}}>contents: write</code> 권한이 필요합니다. 미입력 시 MD 파일 다운로드로 대체됩니다.
+          </div>
+        </div>
+        <button style={{...btn("p"),width:"100%"}} onClick={savePat}>PAT 저장</button>
+        {saved && <div style={{marginTop:8,textAlign:"center",color:C.accent,fontSize:12}}>✓ 저장됨</div>}
+      </div>
+      {saveError && (
+        <div style={{background:'rgba(248,113,113,0.1)',border:`1px solid ${C.red}`,borderRadius:10,padding:"12px 14px",color:C.red,fontSize:12}}>
+          최근 저장 오류: {saveError}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function App() {
   const [members, setMembers] = useState([]);
   const [rounds, setRounds]   = useState([]);
@@ -250,44 +278,38 @@ function App() {
   const [editId, setEditId]   = useState(null);
   const [delId, setDelId]     = useState(null);
   const [focus, setFocus]     = useState(null);
-  const [saved, setSaved]     = useState(false);
   const [showPhoto, setShowPhoto] = useState(false);
+  const [loadError, setLoadError] = useState('');
+  const [saveStatus, setSaveStatus] = useState(''); // '', 'saving', 'ok', 'error'
+  const [saveError, setSaveError] = useState('');
 
-  // Load from MD then localStorage
+  // Always load from golf-scores.md (single source of truth)
   useEffect(() => {
-    let loaded = false;
-    fetch('./golf-scores.md')
-      .then(r => r.text())
+    fetch('./golf-scores.md?' + Date.now())
+      .then(r => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.text(); })
       .then(text => {
         const parsed = parseMD(text);
-        const storedM = localStorage.getItem('amp99m');
-        const storedR = localStorage.getItem('amp99r');
-        const m = storedM ? JSON.parse(storedM) : (parsed ? parsed.members : FALLBACK_MEMBERS);
-        const r = storedR ? JSON.parse(storedR) : (parsed ? parsed.rounds : FALLBACK_ROUNDS);
-        setMembers(m); setRounds(r);
-        setSel(r.length ? [...r].sort((a,b)=>b.date.localeCompare(a.date))[0].id : '');
-        loaded = true;
+        if (!parsed) throw new Error('golf-scores.md 파싱 실패');
+        setMembers(parsed.members); setRounds(parsed.rounds);
+        setSel(parsed.rounds.length ? [...parsed.rounds].sort((a,b)=>b.date.localeCompare(a.date))[0].id : '');
       })
-      .catch(() => {
-        if (!loaded) {
-          try {
-            const m = JSON.parse(localStorage.getItem('amp99m') || 'null') || FALLBACK_MEMBERS;
-            const r = JSON.parse(localStorage.getItem('amp99r') || 'null') || FALLBACK_ROUNDS;
-            setMembers(m); setRounds(r);
-            setSel(r.length ? [...r].sort((a,b)=>b.date.localeCompare(a.date))[0].id : '');
-          } catch { setMembers(FALLBACK_MEMBERS); setRounds(FALLBACK_ROUNDS); setSel('r202603'); }
-        }
-      })
-      .finally(() => setSaved(true));
+      .catch(e => {
+        setLoadError('데이터 로드 실패: ' + (e.message || String(e)));
+      });
   }, []);
 
-  useEffect(() => {
-    if (!saved) return;
-    try {
-      localStorage.setItem('amp99m', JSON.stringify(members));
-      localStorage.setItem('amp99r', JSON.stringify(rounds));
-    } catch {}
-  }, [members, rounds, saved]);
+  const triggerSave = async (newMembers, newRounds) => {
+    setSaveStatus('saving'); setSaveError('');
+    const result = await saveMDToGitHub(newMembers, newRounds);
+    if (result.ok) {
+      setSaveStatus('ok');
+      setTimeout(() => setSaveStatus(''), 2500);
+    } else if (result.error === 'no_pat') {
+      setSaveStatus('');
+    } else {
+      setSaveStatus('error'); setSaveError(result.error || '알 수 없는 오류');
+    }
+  };
 
   const gm = (id) => members.find(m => m.id === id) || {name:"?", gender:"남"};
   const cur = rounds.find(r => r.id === sel) || rounds[0];
@@ -311,14 +333,29 @@ function App() {
       .map(([mid,v]) => ({memberId:mid, score:+v.score, hd:+v.hd, buddies:+v.buddies||0, pars:+v.pars||0, bogeys:+v.bogeys||0}));
     if (!list.length) { alert("성적을 입력하세요"); return; }
     const nr = {id:uid(), date:form.date, course:form.course, scores:list};
-    setRounds(p => [...p, nr]); setSel(nr.id); setTab("view");
+    const newRounds = [...rounds, nr];
+    setRounds(newRounds); setSel(nr.id); setTab("view");
+    triggerSave(members, newRounds);
   };
 
   const saveMember = () => {
     if (!mf.name.trim()) return;
-    if (editId) { setMembers(p => p.map(m => m.id===editId ? {...m,...mf} : m)); setEditId(null); }
-    else { setMembers(p => [...p, {id:uid(), ...mf}]); }
+    let newMembers;
+    if (editId) {
+      newMembers = members.map(m => m.id===editId ? {...m,...mf} : m);
+      setMembers(newMembers); setEditId(null);
+    } else {
+      newMembers = [...members, {id:uid(), ...mf}];
+      setMembers(newMembers);
+    }
     setMf({name:"", gender:"남"});
+    triggerSave(newMembers, rounds);
+  };
+
+  const deleteMember = (id) => {
+    const newMembers = members.filter(x => x.id !== id);
+    setMembers(newMembers); setDelId(null);
+    triggerSave(newMembers, rounds);
   };
 
   const applyPhoto = (matched, newMembers, total) => {
@@ -368,12 +405,21 @@ function App() {
           <div style={{fontSize:10,color:C.dim}}>월례회 성적 관리</div>
         </div>
         <div style={{marginLeft:"auto",display:"flex",alignItems:"center",gap:8}}>
-          <button style={{...btn("g"),padding:"5px 10px",fontSize:11}} onClick={()=>exportMD(members,rounds)}>⬇ MD</button>
+          {saveStatus==='saving' && <span style={{fontSize:11,color:C.dim}}>저장 중...</span>}
+          {saveStatus==='ok' && <span style={{fontSize:11,color:C.accent}}>✓ 저장됨</span>}
+          {saveStatus==='error' && <span style={{fontSize:11,color:C.red}} title={saveError}>⚠ 저장 실패</span>}
+          <button style={{...btn("g"),padding:"5px 10px",fontSize:11}} onClick={()=>downloadMD(members,rounds)}>⬇ MD</button>
           <span style={{fontSize:11,color:C.dim}}>{rounds.length}라운드·{members.length}명</span>
         </div>
       </div>
 
       <div style={{flex:1,padding:"12px 13px",overflowY:"auto"}}>
+
+        {loadError && (
+          <div style={{background:'rgba(248,113,113,0.1)',border:`1px solid ${C.red}`,borderRadius:10,padding:"12px 14px",marginBottom:12,color:C.red,fontSize:13}}>
+            ⚠ {loadError}
+          </div>
+        )}
 
         {/* ── 성적 조회 ── */}
         {tab==="view" && cur && (<>
@@ -521,7 +567,7 @@ function App() {
               <span style={{...gTag(m.gender),marginRight:10}}>{m.gender}</span>
               {delId===m.id?(<>
                 <button style={{...btn("r"),padding:"5px 9px",fontSize:11,marginRight:5}}
-                  onClick={()=>{setMembers(p=>p.filter(x=>x.id!==m.id));setDelId(null);}}>확인</button>
+                  onClick={()=>deleteMember(m.id)}>확인</button>
                 <button style={{...btn(),padding:"5px 9px",fontSize:11}} onClick={()=>setDelId(null)}>취소</button>
               </>):(<>
                 <button style={{...btn(),padding:"5px 9px",fontSize:11,marginRight:5}}
@@ -531,6 +577,9 @@ function App() {
             </div>
           ))}
         </>)}
+
+        {/* ── 설정 ── */}
+        {tab==="settings" && <SettingsTab saveError={saveError}/>}
 
         {/* ── 통계 ── */}
         {tab==="stats" && (<>
@@ -597,7 +646,7 @@ function App() {
 
       {/* 탭 바 */}
       <div style={{display:"flex",background:C.surface,borderTop:`1px solid ${C.border}`,position:"sticky",bottom:0}}>
-        {[["view","🏆","성적조회"],["entry","✏️","성적입력"],["members","👥","회원관리"],["stats","📊","통계"]].map(([id,icon,label])=>(
+        {[["view","🏆","성적조회"],["entry","✏️","성적입력"],["members","👥","회원관리"],["stats","📊","통계"],["settings","⚙️","설정"]].map(([id,icon,label])=>(
           <button key={id} onClick={()=>id==="entry"?goEntry():setTab(id)}
             style={{flex:1,padding:"10px 0",border:"none",background:"none",color:tab===id?C.accent:C.dim,fontSize:10,cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",gap:2,fontFamily:"inherit",borderTop:`2px solid ${tab===id?C.accent:"transparent"}`}}>
             <span style={{fontSize:19}}>{icon}</span>
