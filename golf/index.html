@@ -179,41 +179,31 @@ function PhotoModal({members, onClose, onApply}) {
             role: 'user',
             content: [
               {type:'image', source:{type:'base64', media_type:imgType, data:imgData}},
-              {type:'text', text:`이 골프 성적표에서 선수별 성적을 추출해주세요.
+              {type:'text', text:`이 골프 성적표에서 두 가지 목록을 추출하여 아래 JSON 형식으로 반환해주세요.
 
-【출력 형식】JSON 배열만 반환: [{name, gender, score, hd, buddies, pars, bogeys, longest, nearest}]
+【출력 형식】
+{
+  "scores": [{"name":"...", "gender":"남/여", "score":숫자, "buddies":숫자, "pars":숫자, "bogeys":숫자, "longest":bool, "nearest":bool}],
+  "perio":  [{"name":"...", "periScore":숫자}]
+}
 
-【표 구조】각 컬럼은 독립적인 순위표입니다. 같은 행의 이름들은 서로 다른 선수입니다. 행 번호로 매칭 금지.
+【scores 추출】 "스코어" 컬럼 + 버디/파/보기/롱기/니어 컬럼에서:
+- "스코어" 컬럼의 모든 행: 성별, 이름, 타수(score)
+- "버디" 컬럼의 모든 행: 이름, 버디수 → 이름으로 매칭
+- "파" 컬럼의 모든 행: 이름, 파수 → 이름으로 매칭
+- "보기" 컬럼의 모든 행: 이름, 보기수 → 이름으로 매칭
+- "롱기(M)" 컬럼 1위 행의 이름 → longest:true
+- "니어" 컬럼 1위 행의 이름 → nearest:true
 
-컬럼 구성:
-  A. "스코어" 컬럼: [성별] [이름] [타수]
-  B. "신(더블)페리오" 컬럼: [이름] [HD] [점수]  ← HD와 점수 두 숫자가 있음
-  C. "핸디스코어" 컬럼: [이름] [HD] [점수]
-  D. "버디" 컬럼: [이름] [버디수]
-  E. "파" 컬럼: [이름] [파수]
-  F. "보기" 컬럼: [이름] [보기수]
-  G. "롱기" 컬럼 (M/Y): 1위 행의 이름이 수상자
-  H. "니어" 컬럼: 1위 행의 이름이 수상자
+【perio 추출】 "신(더블)페리오" 컬럼만 독립적으로 읽기:
+- 각 행 형식: [이름] [HD값] [신페리오점수]
+- HD값(작은 수)은 무시하고 신페리오점수(큰 수)만 추출
+- 예) "권민근 20.4 71.6" → {"name":"권민근", "periScore":71.6}
+- 예) "김앤드류 18 72" → {"name":"김앤드류", "periScore":72}
+- 모든 행을 빠짐없이 추출
 
-【추출 단계】
-STEP 1: 컬럼 C "핸디스코어"에서 모든 행의 [이름, 점수] 추출 → {이름: 점수} (score 필드)
-STEP 2: 컬럼 B "신(더블)페리오"에서 모든 행의 [이름, 점수] 추출 → {이름: 점수} (hd 필드)
-  ⚠️ 각 행에 HD(작은 수)와 점수(큰 수) 두 숫자가 있음. 반드시 오른쪽의 큰 수(점수)만 사용!
-  예: "권민근 20.4 71.6" → hd = 71.6 (20.4는 HD이므로 무시)
-STEP 3: 컬럼 A "스코어"에서 모든 행의 [성별, 이름] 추출 → {이름: 성별}
-STEP 4: 컬럼 D/E/F에서 각각 [이름, 수치] 추출 → {이름: 버디수}, {이름: 파수}, {이름: 보기수}
-STEP 5: 컬럼 G 1위 행 이름 = longest 수상자, 컬럼 H 1위 행 이름 = nearest 수상자
-STEP 6: 모든 선수 이름 목록으로 STEP1~5 딕셔너리를 병합하여 완전한 레코드 생성
-
-【필드】
-- name: 선수 이름
-- gender: "남"/"여" (스코어 컬럼에서)
-- score: 핸디스코어 컬럼의 점수 (정수)
-- hd: 신페리오 컬럼의 점수 (소수점 실수, HD값 아님)
-- buddies/pars/bogeys: 정수 (해당 컬럼에 없으면 0)
-- longest/nearest: true/false
-
-JSON 배열만 응답, 설명 없이.`},
+⚠️ scores와 perio는 완전히 독립적으로 추출. 행 번호로 연결하지 말 것.
+JSON만 반환, 설명 없이.`},
             ],
           }],
         }),
@@ -221,17 +211,28 @@ JSON 배열만 응답, 설명 없이.`},
       if (!res.ok) { const e = await res.text(); throw new Error(e); }
       const data = await res.json();
       const text = data.content[0].text.trim();
-      const jsonStr = text.startsWith('[') ? text : text.match(/\[[\s\S]*\]/)?.[0];
-      if (!jsonStr) throw new Error('JSON 파싱 실패');
-      const extracted = JSON.parse(jsonStr);
+      const jsonObjStr = text.match(/\{[\s\S]*\}/)?.[0];
+      if (!jsonObjStr) throw new Error('JSON 파싱 실패');
+      const obj = JSON.parse(jsonObjStr);
+      const periMap = {};
+      (obj.perio || []).forEach(p => {
+        periMap[p.name] = p.periScore;
+      });
+      const findPeri = (name) => {
+        if (periMap[name] !== undefined) return periMap[name];
+        const key = Object.keys(periMap).find(k => k.includes(name) || name.includes(k));
+        return key !== undefined ? periMap[key] : 0;
+      };
+      const extracted = (obj.scores || []);
       const matched = {};
       const newMembers = [];
       extracted.forEach(row => {
+        const periScore = findPeri(row.name);
         const member = members.find(m => m.name === row.name || m.name.includes(row.name) || row.name.includes(m.name));
         if (member) {
-          matched[member.id] = {on:true, score:String(row.score||''), hd:String(row.hd||''), buddies:row.buddies||0, pars:row.pars||0, bogeys:row.bogeys||0, longest:!!row.longest, nearest:!!row.nearest};
+          matched[member.id] = {on:true, score:String(row.score||''), hd:String(periScore), buddies:row.buddies||0, pars:row.pars||0, bogeys:row.bogeys||0, longest:!!row.longest, nearest:!!row.nearest};
         } else {
-          newMembers.push({name:row.name, gender:row.gender||'남', score:row.score, hd:row.hd, buddies:row.buddies||0, pars:row.pars||0, bogeys:row.bogeys||0, longest:!!row.longest, nearest:!!row.nearest});
+          newMembers.push({name:row.name, gender:row.gender||'남', score:row.score, hd:periScore, buddies:row.buddies||0, pars:row.pars||0, bogeys:row.bogeys||0, longest:!!row.longest, nearest:!!row.nearest});
         }
       });
       onApply(matched, newMembers, extracted.length);
