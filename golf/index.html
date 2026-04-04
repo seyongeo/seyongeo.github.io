@@ -82,7 +82,7 @@ function generateMD(members, rounds) {
   members.forEach(m => { md += `| ${m.id} | ${m.name} | ${m.gender} |\n`; });
   md += '\n---\n\n## 라운드 기록\n';
   rounds.forEach(r => {
-    md += `\n### round: ${r.id}\n- 날짜: ${r.date}\n- 코스: ${r.course}\n\n| 회원id | 이름 | 타수 | 핸디 | 버디 | 파 | 보기 | 장타 | 니어 |\n|--------|------|------|------|------|----|------|------|------|\n`;
+    md += `\n### round: ${r.id}\n- 날짜: ${r.date}\n- 코스: ${r.course}\n\n| 회원id | 이름 | 스코어 | 신페리오점수 | 버디 | 파 | 보기 | 장타 | 니어 |\n|--------|------|--------|------------|------|----|------|------|------|\n`;
     r.scores.forEach(s => {
       const m = members.find(x => x.id === s.memberId) || {name:'?'};
       md += `| ${s.memberId} | ${m.name} | ${s.score} | ${s.hd} | ${s.buddies} | ${s.pars} | ${s.bogeys} | ${s.longest?'O':'-'} | ${s.nearest?'O':'-'} |\n`;
@@ -191,23 +191,25 @@ JSON 배열만 반환: [{name, gender, score, hd, buddies, pars, bogeys, longest
 - ⚠️ 같은 행의 왼쪽 선수와 오른쪽 선수는 서로 다른 사람입니다. 행 번호로 매칭하지 마세요!
 
 【추출 단계 - 반드시 이 순서대로】
-STEP 1: 오른쪽 "신페리오" 구역을 처음부터 끝까지 모두 읽어 각 선수의 이름과 HD 값을 {이름: HD} 딕셔너리로 정리하세요.
+STEP 1: 오른쪽 "신페리오" 구역을 처음부터 끝까지 모두 읽어 각 선수의 이름과 신페리오 점수(net score)를 {이름: 신페리오점수} 딕셔너리로 정리하세요. (HD값이 아닌 최종 신페리오 점수!)
 STEP 2: 왼쪽 "스코어" 구역에서 모든 선수의 이름, 성별, 그로스 타수, 버디, 파, 보기를 읽으세요.
-STEP 3: 각 선수마다 STEP 1의 딕셔너리에서 같은 이름을 찾아 HD 값을 가져오세요. 이름이 없으면 hd=0.
+STEP 3: 각 선수마다 STEP 1의 딕셔너리에서 같은 이름을 찾아 신페리오 점수를 hd 필드로 가져오세요. 이름이 없으면 hd=0.
 STEP 4: 장타(longest)상, 니어핀(nearest)상 수상자를 찾으세요 (★표시, 별도 기재, 또는 표 하단 안내 등).
 
 【필드 정의】
 - name: 선수 이름 (정확하게)
 - gender: "남" 또는 "여" (표기 없으면 "남")
 - score: 그로스 타수 (정수, 스코어 구역에서)
-- hd: HD 값 (소수점 포함 실수, 신페리오 구역에서 이름으로 검색)
+- hd: 신페리오 점수 (소수점 포함 실수, 신페리오 구역의 "점수" 또는 "신페리오점수" 컬럼 값. HD값이 아님!)
+  예) 신페리오 구역에 "HD: 20.4 / 점수: 64.6" 이라면 hd = 64.6
 - buddies: 버디 수 (정수, 없으면 0)
 - pars: 파 수 (정수, 없으면 0)
 - bogeys: 보기 수 (정수, 없으면 0)
 - longest: 장타상 수상 여부 (true/false)
 - nearest: 니어핀상 수상 여부 (true/false)
 
-【검증】모든 선수가 포함되었는지, HD 값이 실제 신페리오 구역 값과 일치하는지 확인 후 응답하세요.
+【중요】hd는 신페리오 "HD값(핸디캡)"이 아니라 신페리오 "점수(net score)"입니다!
+【검증】모든 선수가 포함되었는지, 신페리오 점수가 그로스 타수보다 작은지 확인 후 응답하세요.
 JSON 배열만 응답하세요. 설명 없이.`},
             ],
           }],
@@ -271,11 +273,11 @@ function EntryTab({members, sc, setSc, form, setForm, setShowPhoto, onSave, goEn
   const handleSave = () => {
     for (const [mid, v] of Object.entries(sc)) {
       const m = members.find(x=>x.id===mid) || {name:'알 수 없음'};
-      if (v.score==='' || v.hd==='') { alert(`[${m.name}] 스코어 또는 핸디를 입력해 주세요`); return; }
+      if (v.score==='' || v.hd==='') { alert(`[${m.name}] 스코어 또는 신페리오 점수를 입력해 주세요`); return; }
     }
     for (const r of pending) {
       if (!r.name.trim())  { alert('이름을 입력해 주세요'); return; }
-      if (r.score==='' || r.hd==='') { alert(`[${r.name}] 스코어 또는 핸디를 입력해 주세요`); return; }
+      if (r.score==='' || r.hd==='') { alert(`[${r.name}] 스코어 또는 신페리오 점수를 입력해 주세요`); return; }
     }
     const newMembers = [...members];
     const extra = {};
@@ -332,7 +334,7 @@ function EntryTab({members, sc, setSc, form, setForm, setShowPhoto, onSave, goEn
         <div style={{overflowX:"auto"}}>
           <table style={{width:"100%",borderCollapse:"collapse",minWidth:520}}>
             <thead><tr>
-              {["이름","스코어","핸디","신페리오 점수","버디","파","보기","롱기","니어",""].map((h,i)=>(
+              {["이름","스코어","신페리오 점수","핸디","버디","파","보기","롱기","니어",""].map((h,i)=>(
                 <th key={i} style={{...thSt,textAlign:i===0?"left":"center",paddingLeft:i===0?8:3,paddingRight:3}}>{h}</th>
               ))}
             </tr></thead>
@@ -509,7 +511,7 @@ function App() {
   const cur = rounds.find(r => r.id === sel) || rounds[0];
   const enrich = (r) => r.scores.map(s => ({...s, hs:hdScore(s.score, s.hd), member:gm(s.memberId)}));
   const gross = cur ? enrich(cur).sort((a,b)=>a.score-b.score).map((s,i)=>({...s,rank:i+1})) : [];
-  const perio = cur ? enrich(cur).sort((a,b)=>a.hs-b.hs).map((s,i)=>({...s,rank:i+1})) : [];
+  const perio = cur ? enrich(cur).sort((a,b)=>a.hd-b.hd).map((s,i)=>({...s,rank:i+1})) : [];
   const disp  = mode === "perio" ? perio : gross;
   const teamAvg = cur ? avg(cur.scores.map(s=>s.score)).toFixed(1) : "-";
 
@@ -638,8 +640,8 @@ function App() {
           <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:7,marginBottom:12}}>
             {[
               {label:"🥇 메달리스트",  name:gross[0]?.member.name, val:gross[0]?.score, color:C.gold},
-              {label:"🏆 페리오 우승", name:perio[0]?.member.name, val:perio[0]?.hs.toFixed(1), color:C.accent},
-              {label:"🥈 준우승",      name:perio[1]?.member.name, val:perio[1]?.hs.toFixed(1), color:C.silver},
+              {label:"🏆 페리오 우승", name:perio[0]?.member.name, val:perio[0]?.hd.toFixed(1), color:C.accent},
+              {label:"🥈 준우승",      name:perio[1]?.member.name, val:perio[1]?.hd.toFixed(1), color:C.silver},
             ].map(x=>(
               <div key={x.label} style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:10,padding:"10px 8px",textAlign:"center",borderTop:`2px solid ${x.color}`}}>
                 <div style={{fontSize:9,color:C.dim,marginBottom:3}}>{x.label}</div>
@@ -679,11 +681,11 @@ function App() {
                       <td style={{...tdSt,padding:"9px 3px"}}><span style={gTag(row.member.gender)}>{row.member.gender}</span></td>
                       {mode==="gross" ? (<>
                         <td style={{...tdSt,fontWeight:700,color:row.rank<=3?rankColor(row.rank):C.text,padding:"9px 3px"}}>{row.score}</td>
-                        <td style={{...tdSt,color:C.dim,padding:"9px 3px"}}>{row.hd}</td>
-                        <td style={{...tdSt,fontWeight:600,color:C.accent,padding:"9px 3px"}}>{row.hs.toFixed(1)}</td>
+                        <td style={{...tdSt,color:C.dim,padding:"9px 3px"}}>{row.hs.toFixed(1)}</td>
+                        <td style={{...tdSt,fontWeight:600,color:C.accent,padding:"9px 3px"}}>{parseFloat(row.hd).toFixed(1)}</td>
                       </>) : (<>
-                        <td style={{...tdSt,fontWeight:700,color:row.rank<=3?rankColor(row.rank):C.accent,padding:"9px 3px"}}>{row.hs.toFixed(1)}</td>
-                        <td style={{...tdSt,color:C.dim,padding:"9px 3px"}}>{row.hd}</td>
+                        <td style={{...tdSt,fontWeight:700,color:row.rank<=3?rankColor(row.rank):C.accent,padding:"9px 3px"}}>{parseFloat(row.hd).toFixed(1)}</td>
+                        <td style={{...tdSt,color:C.dim,padding:"9px 3px"}}>{row.hs.toFixed(1)}</td>
                         <td style={{...tdSt,fontWeight:600,color:C.text,padding:"9px 3px"}}>{row.score}</td>
                       </>)}
                       <td style={{...tdSt,color:row.buddies>0?C.accent:C.dim,padding:"9px 3px"}}>{row.buddies>0?`★${row.buddies}`:"—"}</td>
@@ -786,17 +788,17 @@ function App() {
             const m=stats.find(x=>x.id===focus);if(!m)return null;
             return(
               <div style={cardSt}>
-                <div style={{fontWeight:700,color:C.accent,marginBottom:10}}>{m.name} · {m.games}회 · 평균핸디 {m.avgHd}</div>
+                <div style={{fontWeight:700,color:C.accent,marginBottom:10}}>{m.name} · {m.games}회 · 평균 신페리오 {m.avgHd}</div>
                 <table style={{width:"100%",borderCollapse:"collapse"}}>
-                  <thead><tr>{["날짜","코스","타수","핸디","핸디점수","버디"].map(h=><th key={h} style={thSt}>{h}</th>)}</tr></thead>
+                  <thead><tr>{["날짜","코스","스코어","신페리오 점수","핸디","버디"].map(h=><th key={h} style={thSt}>{h}</th>)}</tr></thead>
                   <tbody>
                     {m.hist.sort((a,b)=>b.date.localeCompare(a.date)).map((h,i)=>(
                       <tr key={i}>
                         <td style={tdSt}>{h.date}</td>
                         <td style={{...tdSt,fontSize:10,color:C.dim}}>{h.course}</td>
                         <td style={{...tdSt,fontWeight:700,color:h.score===m.best?C.gold:C.text}}>{h.score}</td>
-                        <td style={{...tdSt,color:C.dim}}>{h.hd}</td>
-                        <td style={{...tdSt,fontWeight:600,color:C.accent}}>{hdScore(h.score,h.hd).toFixed(1)}</td>
+                        <td style={{...tdSt,fontWeight:600,color:C.accent}}>{parseFloat(h.hd).toFixed(1)}</td>
+                        <td style={{...tdSt,color:C.dim}}>{hdScore(h.score,h.hd).toFixed(1)}</td>
                         <td style={{...tdSt,color:h.buddies>0?C.accent:C.dim}}>{h.buddies>0?`★${h.buddies}`:"—"}</td>
                       </tr>
                     ))}
