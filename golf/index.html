@@ -179,38 +179,41 @@ function PhotoModal({members, onClose, onApply}) {
             role: 'user',
             content: [
               {type:'image', source:{type:'base64', media_type:imgType, data:imgData}},
-              {type:'text', text:`이 골프 성적표 이미지를 매우 주의 깊게 분석하여 각 선수의 성적을 정확하게 추출해주세요.
+              {type:'text', text:`이 골프 성적표 이미지에서 각 선수의 성적을 추출해주세요.
 
 【출력 형식】
 JSON 배열만 반환: [{name, gender, score, hd, buddies, pars, bogeys, longest, nearest}]
 
-【표 구조 설명】
-이 성적표는 좌우로 두 개의 구역이 있습니다:
-- 왼쪽 "스코어(그로스)" 구역: 그로스 타순으로 정렬된 순위표. 선수이름, 성별, 그로스 타수, 버디수, 파수, 보기수 포함
-- 오른쪽 "신(더블)페리오" 구역: 신페리오 점수순으로 정렬된 순위표. 선수이름, HD값, 신페리오점수 포함
-- ⚠️ 같은 행의 왼쪽 선수와 오른쪽 선수는 서로 다른 사람입니다. 행 번호로 매칭하지 마세요!
+【표 구조】
+이 성적표는 여러 컬럼(순위표)으로 구성되어 있습니다.
+각 컬럼은 독립적인 순위 목록이며, 같은 행의 선수들은 서로 다른 사람입니다.
+컬럼들: "핸디 스코어" 순위표 / "신(더블)페리오" 순위표 / 스코어(그로스) 순위표 등
 
-【추출 단계 - 반드시 이 순서대로】
-STEP 1: 오른쪽 "신페리오" 구역을 처음부터 끝까지 모두 읽어 각 선수의 이름과 신페리오 점수(net score)를 {이름: 신페리오점수} 딕셔너리로 정리하세요. (HD값이 아닌 최종 신페리오 점수!)
-STEP 2: 왼쪽 "스코어" 구역에서 모든 선수의 이름, 성별, 그로스 타수, 버디, 파, 보기를 읽으세요.
-STEP 3: 각 선수마다 STEP 1의 딕셔너리에서 같은 이름을 찾아 신페리오 점수를 hd 필드로 가져오세요. 이름이 없으면 hd=0.
-STEP 4: 장타(longest)상, 니어핀(nearest)상 수상자를 찾으세요 (★표시, 별도 기재, 또는 표 하단 안내 등).
+【추출 방법 - 컬럼별 (이름, 점수) 페어를 만들고 이름으로 병합】
+
+STEP 1 — "핸디 스코어" 컬럼 전체를 읽어 {이름 → 핸디스코어} 딕셔너리 생성
+  (각 행에서 이름과 그 이름의 핸디 스코어 값을 추출)
+
+STEP 2 — "신(더블)페리오" 컬럼 전체를 읽어 {이름 → 신페리오점수} 딕셔너리 생성
+  (각 행에서 이름과 그 이름의 신페리오 점수 값을 추출, HD값이 아닌 최종 점수)
+
+STEP 3 — "스코어(그로스)" 컬럼 전체를 읽어 {이름 → {gender, buddies, pars, bogeys}} 딕셔너리 생성
+  (버디/파/보기 정보 및 성별이 여기에 있음)
+
+STEP 4 — 모든 선수 이름 목록을 수집 후, 이름 기준으로 세 딕셔너리를 병합하여 각 선수의 완전한 레코드 생성
+
+STEP 5 — 장타(longest)상·니어핀(nearest)상 수상자 확인 (★표시 또는 하단 안내)
 
 【필드 정의】
-- name: 선수 이름 (정확하게)
-- gender: "남" 또는 "여" (표기 없으면 "남")
-- score: 그로스 타수 (정수, 스코어 구역에서)
-- hd: 신페리오 점수 (소수점 포함 실수, 신페리오 구역의 "점수" 또는 "신페리오점수" 컬럼 값. HD값이 아님!)
-  예) 신페리오 구역에 "HD: 20.4 / 점수: 64.6" 이라면 hd = 64.6
-- buddies: 버디 수 (정수, 없으면 0)
-- pars: 파 수 (정수, 없으면 0)
-- bogeys: 보기 수 (정수, 없으면 0)
-- longest: 장타상 수상 여부 (true/false)
-- nearest: 니어핀상 수상 여부 (true/false)
+- name: 선수 이름
+- gender: "남" 또는 "여" (없으면 "남")
+- score: 핸디 스코어 컬럼의 점수 (정수)
+- hd: 신(더블)페리오 컬럼의 점수 (소수점 포함 실수, HD값 아님)
+- buddies, pars, bogeys: 정수 (없으면 0)
+- longest, nearest: true/false
 
-【중요】hd는 신페리오 "HD값(핸디캡)"이 아니라 신페리오 "점수(net score)"입니다!
-【검증】모든 선수가 누락 없이 포함되었는지, 각 선수의 신페리오 점수가 신페리오 구역에서 직접 읽은 값과 일치하는지 확인 후 응답하세요.
-JSON 배열만 응답하세요. 설명 없이.`},
+【검증】 모든 선수가 포함되었는지, score는 핸디스코어 컬럼에서, hd는 신페리오 컬럼에서 직접 읽은 값인지 확인.
+JSON 배열만 응답, 설명 없이.`},
             ],
           }],
         }),
@@ -510,8 +513,16 @@ function App() {
   const gm = (id) => members.find(m => m.id === id) || {name:"?", gender:"남"};
   const cur = rounds.find(r => r.id === sel) || rounds[0];
   const enrich = (r) => r.scores.map(s => ({...s, hs:hdScore(s.score), member:gm(s.memberId)}));
-  const gross = cur ? enrich(cur).sort((a,b)=>a.score-b.score).map((s,i)=>({...s,rank:i+1})) : [];
-  const perio = cur ? enrich(cur).sort((a,b)=>a.hd-b.hd).map((s,i)=>({...s,rank:i+1})) : [];
+  const rankArr = (arr, keyFn) => {
+    const sorted = [...arr].sort((a,b) => keyFn(a) - keyFn(b));
+    const ranks = [];
+    sorted.forEach((s,i) => {
+      ranks.push(i===0 ? 1 : (keyFn(s)===keyFn(sorted[i-1]) ? ranks[i-1] : i+1));
+    });
+    return sorted.map((s,i) => ({...s, rank:ranks[i]}));
+  };
+  const gross = cur ? rankArr(enrich(cur), s=>s.score) : [];
+  const perio = cur ? rankArr(enrich(cur), s=>parseFloat(s.hd)||0) : [];
   const disp  = mode === "perio" ? perio : gross;
   const teamAvg = cur ? avg(cur.scores.map(s=>s.score)).toFixed(1) : "-";
 
