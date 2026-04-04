@@ -349,6 +349,7 @@
 
         /* ── Footer ── */
         .footer { margin-top: 32px; text-align: center; font-size: 11px; color: var(--text-tertiary); font-family: 'JetBrains Mono', monospace; }
+        @keyframes spin { to { transform: rotate(360deg); } }
     </style>
 </head>
 <body>
@@ -388,83 +389,11 @@
          DASHBOARD VIEW
     ══════════════════════════════════════ -->
     <div class="view active" id="view-dashboard">
-
-        <div class="card-grid">
-
-            <a class="fcard" href="project-detail-fields.html">
-                <div class="fcard-title">Data Entity 등록</div>
-                <div class="fcard-filename">project-detail-fields.html</div>
-                <div class="fcard-meta">
-                    <span class="fcard-date">2026-03-17</span>
-                    <span class="fcard-size">29 KB</span>
-                </div>
-            </a>
-
-            <a class="fcard" href="project-detail-input.html">
-                <div class="fcard-title">프로젝트 진행 상황 입력</div>
-                <div class="fcard-filename">project-detail-input.html</div>
-                <div class="fcard-meta">
-                    <span class="fcard-date">2026-02-25</span>
-                    <span class="fcard-size">19 KB</span>
-                </div>
-            </a>
-
-            <a class="fcard" href="project-detail.html">
-                <div class="fcard-title">프로젝트 상세</div>
-                <div class="fcard-filename">project-detail.html</div>
-                <div class="fcard-meta">
-                    <span class="fcard-date">2026-02-25</span>
-                    <span class="fcard-size">88 KB</span>
-                </div>
-            </a>
-
-            <a class="fcard" href="project-detail2.html">
-                <div class="fcard-title">프로젝트 상세 2</div>
-                <div class="fcard-filename">project-detail2.html</div>
-                <div class="fcard-meta">
-                    <span class="fcard-date">2026-03-10</span>
-                    <span class="fcard-size">86 KB</span>
-                </div>
-            </a>
-
-            <a class="fcard" href="project-detail3.html">
-                <div class="fcard-title">프로젝트 상세 3</div>
-                <div class="fcard-filename">project-detail3.html</div>
-                <div class="fcard-meta">
-                    <span class="fcard-date">2026-03-11</span>
-                    <span class="fcard-size">82 KB</span>
-                </div>
-            </a>
-
-            <a class="fcard" href="project-management.html">
-                <div class="fcard-title">프로젝트 관리</div>
-                <div class="fcard-filename">project-management.html</div>
-                <div class="fcard-meta">
-                    <span class="fcard-date">2026-02-24</span>
-                    <span class="fcard-size">123 KB</span>
-                </div>
-            </a>
-
-            <a class="fcard" href="project-management-view.html">
-                <div class="fcard-title">프로젝트 관리 뷰</div>
-                <div class="fcard-filename">project-management-view.html</div>
-                <div class="fcard-meta">
-                    <span class="fcard-date">2026-02-23</span>
-                    <span class="fcard-size">76 KB</span>
-                </div>
-            </a>
-
-            <a class="fcard" href="project-management-w2.html">
-                <div class="fcard-title">프로젝트 관리 W2</div>
-                <div class="fcard-filename">project-management-w2.html</div>
-                <div class="fcard-meta">
-                    <span class="fcard-date">2026-02-20</span>
-                    <span class="fcard-size">14 KB</span>
-                </div>
-            </a>
-
+        <div id="dashboard-loader" style="color:var(--text-tertiary);text-align:center;padding:48px;font-size:13px">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="animation:spin 1s linear infinite;margin-bottom:8px;display:block;margin-left:auto;margin-right:auto"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>
+            저장소 파일 목록 로딩 중...
         </div>
-
+        <div id="dashboard-content" style="display:none"></div>
     </div>
 
     <!-- ══════════════════════════════════════
@@ -475,7 +404,8 @@
         <div class="toolbar">
             <button class="toolbar-btn" id="expandAll">▶ 모두 펼치기</button>
             <button class="toolbar-btn" id="collapseAll">▼ 모두 접기</button>
-            <span class="file-count" id="fileCount">14 items</span>
+            <button class="toolbar-btn" id="refreshBtn" title="저장소 파일 목록 새로고침">↻ 새로고침</button>
+            <span class="file-count" id="fileCount">— items</span>
         </div>
 
         <div class="explorer">
@@ -486,250 +416,6 @@
             </div>
 
             <ul class="tree" id="fileTree">
-
-                <!-- ── 루트 파일 ── -->
-                <li class="tree-item" data-name="project-detail-fields.html">
-                    <a class="tree-row" href="project-detail-fields.html">
-                        <div class="row-name">
-                            <span class="chevron" style="visibility:hidden"></span>
-                            <span class="file-icon"><svg width="15" height="15" viewBox="0 0 24 24" fill="none"><rect x="3" y="3" width="18" height="18" rx="2" fill="rgba(249,115,22,0.2)" stroke="rgba(249,115,22,0.6)" stroke-width="1.5"/><path d="M7 8h10M7 12h7M7 16h5" stroke="rgba(249,115,22,0.9)" stroke-width="1.5" stroke-linecap="round"/></svg></span>
-                            <span class="row-label file-link">project-detail-fields.html</span>
-                            <span class="type-badge badge-html">HTML</span>
-                        </div>
-                        <span class="row-size">29 KB</span>
-                        <span class="row-date">2026-03-27</span>
-                    </a>
-                </li>
-
-                <li class="tree-item" data-name="project-detail-input.html">
-                    <a class="tree-row" href="project-detail-input.html">
-                        <div class="row-name">
-                            <span class="chevron" style="visibility:hidden"></span>
-                            <span class="file-icon"><svg width="15" height="15" viewBox="0 0 24 24" fill="none"><rect x="3" y="3" width="18" height="18" rx="2" fill="rgba(249,115,22,0.2)" stroke="rgba(249,115,22,0.6)" stroke-width="1.5"/><path d="M7 8h10M7 12h7M7 16h5" stroke="rgba(249,115,22,0.9)" stroke-width="1.5" stroke-linecap="round"/></svg></span>
-                            <span class="row-label file-link">project-detail-input.html</span>
-                            <span class="type-badge badge-html">HTML</span>
-                        </div>
-                        <span class="row-size">19 KB</span>
-                        <span class="row-date">2026-03-27</span>
-                    </a>
-                </li>
-
-                <li class="tree-item" data-name="project-detail-spec.md">
-                    <a class="tree-row" href="project-detail-spec.md">
-                        <div class="row-name">
-                            <span class="chevron" style="visibility:hidden"></span>
-                            <span class="file-icon"><svg width="15" height="15" viewBox="0 0 24 24" fill="none"><rect x="3" y="3" width="18" height="18" rx="2" fill="rgba(79,124,255,0.2)" stroke="rgba(79,124,255,0.6)" stroke-width="1.5"/><path d="M7 8h10M7 12h10M7 16h6" stroke="rgba(79,124,255,0.9)" stroke-width="1.5" stroke-linecap="round"/></svg></span>
-                            <span class="row-label file-link">project-detail-spec.md</span>
-                            <span class="type-badge badge-md">MD</span>
-                        </div>
-                        <span class="row-size">26 KB</span>
-                        <span class="row-date">2026-03-27</span>
-                    </a>
-                </li>
-
-                <li class="tree-item" data-name="project-detail.html">
-                    <a class="tree-row" href="project-detail.html">
-                        <div class="row-name">
-                            <span class="chevron" style="visibility:hidden"></span>
-                            <span class="file-icon"><svg width="15" height="15" viewBox="0 0 24 24" fill="none"><rect x="3" y="3" width="18" height="18" rx="2" fill="rgba(249,115,22,0.2)" stroke="rgba(249,115,22,0.6)" stroke-width="1.5"/><path d="M7 8h10M7 12h7M7 16h5" stroke="rgba(249,115,22,0.9)" stroke-width="1.5" stroke-linecap="round"/></svg></span>
-                            <span class="row-label file-link">project-detail.html</span>
-                            <span class="type-badge badge-html">HTML</span>
-                        </div>
-                        <span class="row-size">88 KB</span>
-                        <span class="row-date">2026-03-27</span>
-                    </a>
-                </li>
-
-                <li class="tree-item" data-name="project-detail2.html">
-                    <a class="tree-row" href="project-detail2.html">
-                        <div class="row-name">
-                            <span class="chevron" style="visibility:hidden"></span>
-                            <span class="file-icon"><svg width="15" height="15" viewBox="0 0 24 24" fill="none"><rect x="3" y="3" width="18" height="18" rx="2" fill="rgba(249,115,22,0.2)" stroke="rgba(249,115,22,0.6)" stroke-width="1.5"/><path d="M7 8h10M7 12h7M7 16h5" stroke="rgba(249,115,22,0.9)" stroke-width="1.5" stroke-linecap="round"/></svg></span>
-                            <span class="row-label file-link">project-detail2.html</span>
-                            <span class="type-badge badge-html">HTML</span>
-                        </div>
-                        <span class="row-size">86 KB</span>
-                        <span class="row-date">2026-03-27</span>
-                    </a>
-                </li>
-
-                <li class="tree-item" data-name="project-detail3.html">
-                    <a class="tree-row" href="project-detail3.html">
-                        <div class="row-name">
-                            <span class="chevron" style="visibility:hidden"></span>
-                            <span class="file-icon"><svg width="15" height="15" viewBox="0 0 24 24" fill="none"><rect x="3" y="3" width="18" height="18" rx="2" fill="rgba(249,115,22,0.2)" stroke="rgba(249,115,22,0.6)" stroke-width="1.5"/><path d="M7 8h10M7 12h7M7 16h5" stroke="rgba(249,115,22,0.9)" stroke-width="1.5" stroke-linecap="round"/></svg></span>
-                            <span class="row-label file-link">project-detail3.html</span>
-                            <span class="type-badge badge-html">HTML</span>
-                        </div>
-                        <span class="row-size">82 KB</span>
-                        <span class="row-date">2026-03-27</span>
-                    </a>
-                </li>
-
-                <li class="tree-item" data-name="project-management-view.html">
-                    <a class="tree-row" href="project-management-view.html">
-                        <div class="row-name">
-                            <span class="chevron" style="visibility:hidden"></span>
-                            <span class="file-icon"><svg width="15" height="15" viewBox="0 0 24 24" fill="none"><rect x="3" y="3" width="18" height="18" rx="2" fill="rgba(249,115,22,0.2)" stroke="rgba(249,115,22,0.6)" stroke-width="1.5"/><path d="M7 8h10M7 12h7M7 16h5" stroke="rgba(249,115,22,0.9)" stroke-width="1.5" stroke-linecap="round"/></svg></span>
-                            <span class="row-label file-link">project-management-view.html</span>
-                            <span class="type-badge badge-html">HTML</span>
-                        </div>
-                        <span class="row-size">76 KB</span>
-                        <span class="row-date">2026-03-27</span>
-                    </a>
-                </li>
-
-                <li class="tree-item" data-name="project-management-w2.html">
-                    <a class="tree-row" href="project-management-w2.html">
-                        <div class="row-name">
-                            <span class="chevron" style="visibility:hidden"></span>
-                            <span class="file-icon"><svg width="15" height="15" viewBox="0 0 24 24" fill="none"><rect x="3" y="3" width="18" height="18" rx="2" fill="rgba(249,115,22,0.2)" stroke="rgba(249,115,22,0.6)" stroke-width="1.5"/><path d="M7 8h10M7 12h7M7 16h5" stroke="rgba(249,115,22,0.9)" stroke-width="1.5" stroke-linecap="round"/></svg></span>
-                            <span class="row-label file-link">project-management-w2.html</span>
-                            <span class="type-badge badge-html">HTML</span>
-                        </div>
-                        <span class="row-size">14 KB</span>
-                        <span class="row-date">2026-03-27</span>
-                    </a>
-                </li>
-
-                <li class="tree-item" data-name="project-management.html">
-                    <a class="tree-row" href="project-management.html">
-                        <div class="row-name">
-                            <span class="chevron" style="visibility:hidden"></span>
-                            <span class="file-icon"><svg width="15" height="15" viewBox="0 0 24 24" fill="none"><rect x="3" y="3" width="18" height="18" rx="2" fill="rgba(249,115,22,0.2)" stroke="rgba(249,115,22,0.6)" stroke-width="1.5"/><path d="M7 8h10M7 12h7M7 16h5" stroke="rgba(249,115,22,0.9)" stroke-width="1.5" stroke-linecap="round"/></svg></span>
-                            <span class="row-label file-link">project-management.html</span>
-                            <span class="type-badge badge-html">HTML</span>
-                        </div>
-                        <span class="row-size">123 KB</span>
-                        <span class="row-date">2026-03-27</span>
-                    </a>
-                </li>
-
-                <li class="tree-item" data-name="project-detail-data.json">
-                    <a class="tree-row" href="project-detail-data.json">
-                        <div class="row-name">
-                            <span class="chevron" style="visibility:hidden"></span>
-                            <span class="file-icon"><svg width="15" height="15" viewBox="0 0 24 24" fill="none"><rect x="3" y="3" width="18" height="18" rx="2" fill="rgba(245,158,11,0.2)" stroke="rgba(245,158,11,0.6)" stroke-width="1.5"/><path d="M8 7c-1 0-2 .9-2 2v2c0 .6-.4 1-1 1 .6 0 1 .4 1 1v2c0 1.1 1 2 2 2M16 7c1 0 2 .9 2 2v2c0 .6.4 1 1 1-.6 0-1 .4-1 1v2c0 1.1-1 2-2 2" stroke="rgba(245,158,11,0.9)" stroke-width="1.5" stroke-linecap="round"/></svg></span>
-                            <span class="row-label file-link">project-detail-data.json</span>
-                            <span class="type-badge badge-json">JSON</span>
-                        </div>
-                        <span class="row-size">1.2 KB</span>
-                        <span class="row-date">2026-03-27</span>
-                    </a>
-                </li>
-
-                <li class="tree-item" data-name="files.zip">
-                    <div class="tree-row" style="cursor:default">
-                        <div class="row-name">
-                            <span class="chevron" style="visibility:hidden"></span>
-                            <span class="file-icon"><svg width="15" height="15" viewBox="0 0 24 24" fill="none"><rect x="3" y="3" width="18" height="18" rx="2" fill="rgba(168,85,247,0.2)" stroke="rgba(168,85,247,0.6)" stroke-width="1.5"/><path d="M12 3v8m0 0-2-2m2 2 2-2" stroke="rgba(168,85,247,0.9)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M9 15h1v2H9v-2zm5 0h1v2h-1v-2zm-5 2h1v2H9v-2zm5 0h1v2h-1v-2z" fill="rgba(168,85,247,0.9)"/></svg></span>
-                            <span class="row-label" style="color:var(--text-secondary)">files.zip</span>
-                            <span class="type-badge badge-zip">ZIP</span>
-                        </div>
-                        <span class="row-size">90 KB</span>
-                        <span class="row-date">2026-03-27</span>
-                    </div>
-                </li>
-
-                <li class="tree-item" data-name="test_memo.txt">
-                    <div class="tree-row" style="cursor:default">
-                        <div class="row-name">
-                            <span class="chevron" style="visibility:hidden"></span>
-                            <span class="file-icon"><svg width="15" height="15" viewBox="0 0 24 24" fill="none"><rect x="3" y="3" width="18" height="18" rx="2" fill="rgba(139,149,168,0.15)" stroke="rgba(139,149,168,0.4)" stroke-width="1.5"/><path d="M7 8h10M7 12h6M7 16h4" stroke="rgba(139,149,168,0.7)" stroke-width="1.5" stroke-linecap="round"/></svg></span>
-                            <span class="row-label" style="color:var(--text-secondary)">test_memo.txt</span>
-                            <span class="type-badge badge-txt">TXT</span>
-                        </div>
-                        <span class="row-size">9 B</span>
-                        <span class="row-date">2026-03-27</span>
-                    </div>
-                </li>
-
-                <li class="tree-sep"></li>
-
-                <!-- ── Folder: files/ ── -->
-                <li class="tree-item folder-item" data-name="files" id="folder-files">
-                    <div class="tree-row folder-row" onclick="toggleFolder('folder-files')">
-                        <div class="row-name">
-                            <span class="chevron open" id="chevron-folder-files">▶</span>
-                            <span class="file-icon"><svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M3 7c0-1.1.9-2 2-2h4l2 2h8c1.1 0 2 .9 2 2v9c0 1.1-.9 2-2 2H5c-1.1 0-2-.9-2-2V7z" fill="rgba(6,182,212,0.2)" stroke="rgba(6,182,212,0.7)" stroke-width="1.5"/></svg></span>
-                            <span class="row-label folder-label">files</span>
-                            <span class="type-badge badge-dir">DIR</span>
-                        </div>
-                        <span class="row-size">—</span>
-                        <span class="row-date">2026-03-27</span>
-                    </div>
-                    <ul class="tree folder-children" id="children-folder-files">
-                        <li class="tree-item" data-name="project-detail.html">
-                            <a class="tree-row" href="files/project-detail.html">
-                                <div class="row-name">
-                                    <span class="indent" style="width:20px"></span>
-                                    <span class="chevron" style="visibility:hidden"></span>
-                                    <span class="file-icon"><svg width="15" height="15" viewBox="0 0 24 24" fill="none"><rect x="3" y="3" width="18" height="18" rx="2" fill="rgba(249,115,22,0.2)" stroke="rgba(249,115,22,0.6)" stroke-width="1.5"/><path d="M7 8h10M7 12h7M7 16h5" stroke="rgba(249,115,22,0.9)" stroke-width="1.5" stroke-linecap="round"/></svg></span>
-                                    <span class="row-label file-link">project-detail.html</span>
-                                    <span class="type-badge badge-html">HTML</span>
-                                </div>
-                                <span class="row-size">—</span>
-                                <span class="row-date">—</span>
-                            </a>
-                        </li>
-                        <li class="tree-item" data-name="project-management-mockup.html">
-                            <a class="tree-row" href="files/project-management-mockup.html">
-                                <div class="row-name">
-                                    <span class="indent" style="width:20px"></span>
-                                    <span class="chevron" style="visibility:hidden"></span>
-                                    <span class="file-icon"><svg width="15" height="15" viewBox="0 0 24 24" fill="none"><rect x="3" y="3" width="18" height="18" rx="2" fill="rgba(249,115,22,0.2)" stroke="rgba(249,115,22,0.6)" stroke-width="1.5"/><path d="M7 8h10M7 12h7M7 16h5" stroke="rgba(249,115,22,0.9)" stroke-width="1.5" stroke-linecap="round"/></svg></span>
-                                    <span class="row-label file-link">project-management-mockup.html</span>
-                                    <span class="type-badge badge-html">HTML</span>
-                                </div>
-                                <span class="row-size">—</span>
-                                <span class="row-date">—</span>
-                            </a>
-                        </li>
-                    </ul>
-                </li>
-
-                <!-- ── Folder: files 2/ ── -->
-                <li class="tree-item folder-item" data-name="files 2" id="folder-files2">
-                    <div class="tree-row folder-row" onclick="toggleFolder('folder-files2')">
-                        <div class="row-name">
-                            <span class="chevron open" id="chevron-folder-files2">▶</span>
-                            <span class="file-icon"><svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M3 7c0-1.1.9-2 2-2h4l2 2h8c1.1 0 2 .9 2 2v9c0 1.1-.9 2-2 2H5c-1.1 0-2-.9-2-2V7z" fill="rgba(6,182,212,0.2)" stroke="rgba(6,182,212,0.7)" stroke-width="1.5"/></svg></span>
-                            <span class="row-label folder-label">files 2</span>
-                            <span class="type-badge badge-dir">DIR</span>
-                        </div>
-                        <span class="row-size">—</span>
-                        <span class="row-date">2026-03-27</span>
-                    </div>
-                    <ul class="tree folder-children" id="children-folder-files2">
-                        <li class="tree-item" data-name="project-detail.html">
-                            <a class="tree-row" href="files 2/project-detail.html">
-                                <div class="row-name">
-                                    <span class="indent" style="width:20px"></span>
-                                    <span class="chevron" style="visibility:hidden"></span>
-                                    <span class="file-icon"><svg width="15" height="15" viewBox="0 0 24 24" fill="none"><rect x="3" y="3" width="18" height="18" rx="2" fill="rgba(249,115,22,0.2)" stroke="rgba(249,115,22,0.6)" stroke-width="1.5"/><path d="M7 8h10M7 12h7M7 16h5" stroke="rgba(249,115,22,0.9)" stroke-width="1.5" stroke-linecap="round"/></svg></span>
-                                    <span class="row-label file-link">project-detail.html</span>
-                                    <span class="type-badge badge-html">HTML</span>
-                                </div>
-                                <span class="row-size">—</span>
-                                <span class="row-date">—</span>
-                            </a>
-                        </li>
-                        <li class="tree-item" data-name="project-management-mockup.html">
-                            <a class="tree-row" href="files 2/project-management-mockup.html">
-                                <div class="row-name">
-                                    <span class="indent" style="width:20px"></span>
-                                    <span class="chevron" style="visibility:hidden"></span>
-                                    <span class="file-icon"><svg width="15" height="15" viewBox="0 0 24 24" fill="none"><rect x="3" y="3" width="18" height="18" rx="2" fill="rgba(249,115,22,0.2)" stroke="rgba(249,115,22,0.6)" stroke-width="1.5"/><path d="M7 8h10M7 12h7M7 16h5" stroke="rgba(249,115,22,0.9)" stroke-width="1.5" stroke-linecap="round"/></svg></span>
-                                    <span class="row-label file-link">project-management-mockup.html</span>
-                                    <span class="type-badge badge-html">HTML</span>
-                                </div>
-                                <span class="row-size">—</span>
-                                <span class="row-date">—</span>
-                            </a>
-                        </li>
-                    </ul>
-                </li>
-
             </ul>
 
             <div class="empty-state" id="emptyState">
@@ -744,127 +430,263 @@
 </div>
 
 <script>
-    // ── View switch ──
-    function switchView(name) {
-        document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
-        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-        document.getElementById('view-' + name).classList.add('active');
-        document.getElementById('tab-' + name).classList.add('active');
+// ════════════════════════════════════════════════════════════════════
+//  CONFIG — 새 프로젝트 추가 시 이 맵에 메타 정보를 등록하세요.
+//  등록하지 않아도 폴더/파일은 자동으로 대시보드와 탐색기에 표시됩니다.
+// ════════════════════════════════════════════════════════════════════
+const PROJECT_META = {
+    'golf':               { icon: '⛳', label: 'AMP99 Golf Manager', color: '#4ade80' },
+    'project-management': { icon: '📋', label: '프로젝트 관리',       color: null },
+    'project-detail':     { icon: '📄', label: '프로젝트 상세',       color: null },
+};
 
-        const searchBar = document.getElementById('searchBarWrap');
-        if (name === 'explorer') {
-            searchBar.classList.add('visible');
-        } else {
-            searchBar.classList.remove('visible');
-            // clear search when leaving explorer
-            document.getElementById('searchInput').value = '';
-            document.getElementById('searchClear').style.display = 'none';
-            filterTree('');
-        }
+// 탐색기엔 표시하되 대시보드 앱 섹션에서는 제외할 폴더
+const ARCHIVE_DIRS    = new Set(['.git', '.claude', 'node_modules', 'files', 'files 2']);
+// 대시보드에서 제외할 루트 파일
+const SKIP_DASH_FILES = new Set(['index.html']);
+
+const REPO      = 'seyongeo/seyongeo.github.io';
+const BRANCH    = 'main';
+const CACHE_KEY = 'ws_tree_v4';
+
+// ── SVG icon helpers ──
+const _rect = (fill, stroke, body) =>
+    `<svg width="15" height="15" viewBox="0 0 24 24" fill="none"><rect x="3" y="3" width="18" height="18" rx="2" fill="${fill}" stroke="${stroke}" stroke-width="1.5"/>${body}</svg>`;
+const ICONS = {
+    html: _rect('rgba(249,115,22,0.2)','rgba(249,115,22,0.6)','<path d="M7 8h10M7 12h7M7 16h5" stroke="rgba(249,115,22,0.9)" stroke-width="1.5" stroke-linecap="round"/>'),
+    md:   _rect('rgba(79,124,255,0.2)', 'rgba(79,124,255,0.6)', '<path d="M7 8h10M7 12h10M7 16h6" stroke="rgba(79,124,255,0.9)" stroke-width="1.5" stroke-linecap="round"/>'),
+    json: _rect('rgba(245,158,11,0.2)', 'rgba(245,158,11,0.6)', '<path d="M8 7c-1 0-2 .9-2 2v2c0 .6-.4 1-1 1 .6 0 1 .4 1 1v2c0 1.1 1 2 2 2M16 7c1 0 2 .9 2 2v2c0 .6.4 1 1 1-.6 0-1 .4-1 1v2c0 1.1-1 2-2 2" stroke="rgba(245,158,11,0.9)" stroke-width="1.5" stroke-linecap="round"/>'),
+    zip:  `<svg width="15" height="15" viewBox="0 0 24 24" fill="none"><rect x="3" y="3" width="18" height="18" rx="2" fill="rgba(168,85,247,0.2)" stroke="rgba(168,85,247,0.6)" stroke-width="1.5"/><path d="M12 3v8m0 0-2-2m2 2 2-2" stroke="rgba(168,85,247,0.9)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M9 15h1v2H9v-2zm5 0h1v2h-1v-2zm-5 2h1v2H9v-2zm5 0h1v2h-1v-2z" fill="rgba(168,85,247,0.9)"/></svg>`,
+    file: _rect('rgba(139,149,168,0.15)','rgba(139,149,168,0.4)','<path d="M7 8h10M7 12h6M7 16h4" stroke="rgba(139,149,168,0.7)" stroke-width="1.5" stroke-linecap="round"/>'),
+    dir:  (stroke, fill) => `<svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M3 7c0-1.1.9-2 2-2h4l2 2h8c1.1 0 2 .9 2 2v9c0 1.1-.9 2-2 2H5c-1.1 0-2-.9-2-2V7z" fill="${fill}" stroke="${stroke}" stroke-width="1.5"/></svg>`,
+};
+
+function fileIcon(name) {
+    const ext = name.split('.').pop().toLowerCase();
+    return ICONS[ext] || ICONS.file;
+}
+function typeBadge(name) {
+    const ext = name.split('.').pop().toUpperCase();
+    const cls = { HTML:'badge-html', JSON:'badge-json', MD:'badge-md', ZIP:'badge-zip' };
+    const c = cls[ext];
+    return c ? `<span class="type-badge ${c}">${ext}</span>` : '';
+}
+function fmtBytes(n) {
+    if (!n) return '—';
+    if (n < 1024) return n + ' B';
+    if (n < 1048576) return Math.round(n/1024) + ' KB';
+    return (n/1048576).toFixed(1) + ' MB';
+}
+function humanize(k) {
+    return k.split(/[-_]/).map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+}
+function groupKey(filename) {
+    const base  = filename.replace(/\.[^.]+$/, '');
+    const parts = base.split('-');
+    const kept  = parts.slice(0, 2);
+    kept[kept.length-1] = kept[kept.length-1].replace(/[0-9]+$/, '');
+    return kept.join('-') || base;
+}
+
+// ── GitHub API (with session cache) ──
+async function fetchTree(bust) {
+    if (!bust) {
+        try { const c = sessionStorage.getItem(CACHE_KEY); if (c) return JSON.parse(c); } catch {}
     }
+    const res = await fetch(`https://api.github.com/repos/${REPO}/git/trees/${BRANCH}?recursive=1`);
+    if (!res.ok) throw new Error('GitHub API ' + res.status);
+    const data = await res.json();
+    try { sessionStorage.setItem(CACHE_KEY, JSON.stringify(data.tree)); } catch {}
+    return data.tree;
+}
 
-    // ── Folder toggle ──
-    function toggleFolder(folderId) {
-        const children = document.getElementById('children-' + folderId);
-        const chevron  = document.getElementById('chevron-' + folderId);
-        if (!children) return;
-        const collapsed = children.classList.contains('collapsed');
-        if (collapsed) {
-            children.classList.remove('collapsed');
-            children.style.maxHeight = children.scrollHeight + 'px';
-            chevron.classList.add('open');
-        } else {
-            children.classList.add('collapsed');
-            children.style.maxHeight = '0';
-            chevron.classList.remove('open');
-        }
+// ── Dashboard builder ──
+function buildDashboard(tree) {
+    const loader  = document.getElementById('dashboard-loader');
+    const content = document.getElementById('dashboard-content');
+    loader.style.display  = 'none';
+    content.style.display = '';
+    content.innerHTML     = '';
+
+    const paths    = new Set(tree.map(t => t.path));
+    const rootDirs = tree.filter(t => t.type==='tree' && !t.path.includes('/') && !ARCHIVE_DIRS.has(t.path) && !t.path.startsWith('.'));
+    const appDirs  = rootDirs.filter(d => paths.has(d.path + '/index.html'));
+    const rootHtml = tree.filter(t => t.type==='blob' && !t.path.includes('/') && t.path.endsWith('.html') && !SKIP_DASH_FILES.has(t.path));
+
+    const sections = [];
+
+    appDirs.forEach(d => {
+        const meta  = PROJECT_META[d.path] || {};
+        const iFile = tree.find(t => t.path === d.path + '/index.html');
+        sections.push({
+            label: (meta.icon||'🗂') + '\u00a0 ' + (meta.label||humanize(d.path)),
+            items: [{ href: d.path+'/', title: meta.label||humanize(d.path), filename: d.path+'/index.html', size: fmtBytes(iFile&&iFile.size), color: meta.color||null }],
+        });
+    });
+
+    const groups = {};
+    rootHtml.forEach(f => { const k=groupKey(f.path); (groups[k]=groups[k]||[]).push(f); });
+    Object.entries(groups).forEach(([k, files]) => {
+        const meta = PROJECT_META[k] || {};
+        sections.push({
+            label: (meta.icon||'📁') + '\u00a0 ' + (meta.label||humanize(k)),
+            items: files.map(f => ({ href:f.path, title:humanize(f.path.replace(/\.[^.]+$/,'')), filename:f.path, size:fmtBytes(f.size), color:null })),
+        });
+    });
+
+    if (!sections.length) { content.innerHTML='<div style="color:var(--text-tertiary);text-align:center;padding:48px">앱/파일이 없습니다</div>'; return; }
+
+    sections.forEach((sec, i) => {
+        if (i) content.insertAdjacentHTML('beforeend', '<div class="divider"></div>');
+        content.insertAdjacentHTML('beforeend',
+            `<div class="section-label" style="margin-top:8px">${sec.label}</div>
+            <div class="card-grid" style="margin-bottom:16px">
+            ${sec.items.map(item=>`
+                <a class="fcard" href="${item.href}" ${item.color?`style="border-color:${item.color}44"`:''}><div class="fcard-title" ${item.color?`style="color:${item.color}"`:''}>${item.title}</div><div class="fcard-filename">${item.filename}</div><div class="fcard-meta"><span></span><span class="fcard-size">${item.size}</span></div></a>`).join('')}
+            </div>`);
+    });
+}
+
+// ── Explorer builder ──
+function buildExplorer(tree) {
+    const fileTree = document.getElementById('fileTree');
+    fileTree.innerHTML = '';
+    let total = 0;
+
+    const visible   = tree.filter(t => !t.path.startsWith('.'));
+    const rootFiles = visible.filter(t => t.type==='blob' && !t.path.includes('/'));
+    const rootDirs  = visible.filter(t => t.type==='tree' && !t.path.includes('/'));
+    const dirMap    = {};
+    visible.filter(t => t.path.split('/').length===2).forEach(t => {
+        const d = t.path.split('/')[0];
+        (dirMap[d]=dirMap[d]||[]).push(t);
+    });
+
+    rootFiles.sort((a,b)=>a.path.localeCompare(b.path)).forEach(f => {
+        total++;
+        fileTree.insertAdjacentHTML('beforeend', fileRowHtml(f.path, f.path, fmtBytes(f.size), false));
+    });
+    fileTree.insertAdjacentHTML('beforeend', '<li class="tree-sep"></li>');
+
+    rootDirs.sort((a,b)=>a.path.localeCompare(b.path)).forEach(d => {
+        const meta     = PROJECT_META[d.path] || {};
+        const children = (dirMap[d.path]||[]).sort((a,b)=>a.path.localeCompare(b.path));
+        const isApp    = children.some(c=>c.path===d.path+'/index.html');
+        const col      = meta.color || (isApp?'#4ade80':null);
+        const stroke   = col ? col+'b3' : 'rgba(6,182,212,0.7)';
+        const fill     = col ? col+'33' : 'rgba(6,182,212,0.2)';
+        const fid      = 'folder-' + d.path.replace(/[^a-zA-Z0-9]/g,'_');
+        const childHtml = children.map(c=>{ total++; return fileRowHtml(c.path, c.path.split('/').pop(), fmtBytes(c.size), true); }).join('');
+        fileTree.insertAdjacentHTML('beforeend', `
+            <li class="tree-item folder-item" data-name="${d.path}" id="${fid}">
+                <div class="tree-row folder-row" onclick="toggleFolder('${fid}')">
+                    <div class="row-name">
+                        <span class="chevron open" id="chevron-${fid}">▶</span>
+                        <span class="file-icon">${ICONS.dir(stroke,fill)}</span>
+                        <span class="row-label folder-label"${col?` style="color:${col}"`:''}>${d.path}</span>
+                        <span class="type-badge badge-dir">DIR</span>
+                    </div>
+                    <span class="row-size">—</span><span class="row-date">—</span>
+                </div>
+                <ul class="tree folder-children" id="children-${fid}">${childHtml}</ul>
+            </li>`);
+    });
+
+    document.querySelectorAll('.folder-children:not(.collapsed)').forEach(el => { el.style.maxHeight = el.scrollHeight + 'px'; });
+    document.getElementById('fileCount').textContent = total + ' items';
+}
+
+function fileRowHtml(href, name, size, indented) {
+    const isLink   = /\.(html|md|json)$/.test(name);
+    const indent   = indented ? '<span class="indent" style="width:20px"></span>' : '';
+    const openTag  = isLink ? `<a class="tree-row" href="${href}">` : '<div class="tree-row" style="cursor:default">';
+    const closeTag = isLink ? '</a>' : '</div>';
+    return `
+        <li class="tree-item" data-name="${name}">
+            ${openTag}<div class="row-name">${indent}<span class="chevron" style="visibility:hidden"></span><span class="file-icon">${fileIcon(name)}</span><span class="row-label${isLink?' file-link':''}"${!isLink?' style="color:var(--text-secondary)"':''}>${name}</span>${typeBadge(name)}</div><span class="row-size">${size}</span><span class="row-date">—</span>${closeTag}
+        </li>`;
+}
+
+// ── Init ──
+async function init(bust) {
+    document.getElementById('dashboard-loader').style.display = '';
+    document.getElementById('dashboard-content').style.display = 'none';
+    document.getElementById('refreshBtn').disabled = true;
+    document.getElementById('fileTree').innerHTML = '<li style="pointer-events:none"><div class="tree-row" style="color:var(--text-tertiary);font-size:12px;padding:12px 16px">로딩 중...</div></li>';
+    try {
+        const tree = await fetchTree(bust);
+        buildDashboard(tree);
+        buildExplorer(tree);
+    } catch(e) {
+        document.getElementById('dashboard-loader').style.display = 'none';
+        document.getElementById('dashboard-content').style.display = '';
+        document.getElementById('dashboard-content').innerHTML = `<div style="color:var(--danger);text-align:center;padding:48px;font-size:13px">GitHub API 연결 실패<br><small style="color:var(--text-tertiary)">${e.message}</small></div>`;
+        document.getElementById('fileTree').innerHTML = '';
+    } finally {
+        document.getElementById('refreshBtn').disabled = false;
     }
+}
+init();
+document.getElementById('refreshBtn').addEventListener('click', () => { sessionStorage.removeItem(CACHE_KEY); init(true); });
 
-    // Init max-height for open folders
-    document.querySelectorAll('.folder-children:not(.collapsed)').forEach(el => {
-        el.style.maxHeight = el.scrollHeight + 'px';
+// ── View switch ──
+function switchView(name) {
+    document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+    document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+    document.getElementById('view-'+name).classList.add('active');
+    document.getElementById('tab-'+name).classList.add('active');
+    const sb = document.getElementById('searchBarWrap');
+    if (name==='explorer') { sb.classList.add('visible'); }
+    else { sb.classList.remove('visible'); document.getElementById('searchInput').value=''; document.getElementById('searchClear').style.display='none'; filterTree(''); }
+}
+
+// ── Folder toggle ──
+function toggleFolder(fid) {
+    const ch  = document.getElementById('children-'+fid);
+    const chv = document.getElementById('chevron-'+fid);
+    if (!ch) return;
+    if (ch.classList.contains('collapsed')) { ch.classList.remove('collapsed'); ch.style.maxHeight=ch.scrollHeight+'px'; chv.classList.add('open'); }
+    else { ch.classList.add('collapsed'); ch.style.maxHeight='0'; chv.classList.remove('open'); }
+}
+document.getElementById('expandAll').addEventListener('click', () => {
+    document.querySelectorAll('.folder-children').forEach(el=>{ el.classList.remove('collapsed'); el.style.maxHeight=el.scrollHeight+'px'; });
+    document.querySelectorAll('.chevron[id^="chevron-"]').forEach(c=>c.classList.add('open'));
+});
+document.getElementById('collapseAll').addEventListener('click', () => {
+    document.querySelectorAll('.folder-children').forEach(el=>{ el.classList.add('collapsed'); el.style.maxHeight='0'; });
+    document.querySelectorAll('.chevron[id^="chevron-"]').forEach(c=>c.classList.remove('open'));
+});
+
+// ── Search ──
+const searchInput = document.getElementById('searchInput');
+const searchClear = document.getElementById('searchClear');
+const fileCountEl = document.getElementById('fileCount');
+const emptyState  = document.getElementById('emptyState');
+function filterTree(q) {
+    q = (q||'').toLowerCase().trim();
+    document.querySelectorAll('#fileTree li.tree-item').forEach(item => {
+        const name=item.dataset.name.toLowerCase(), isF=item.classList.contains('folder-item');
+        if (!q) { item.style.display=''; return; }
+        if (isF) {
+            let hit=false;
+            item.querySelectorAll('li.tree-item').forEach(c=>{ const cn=c.dataset.name.toLowerCase(); c.style.display=cn.includes(q)?(hit=true,''):'none'; });
+            item.style.display=(name.includes(q)||hit)?'':'none';
+            if (name.includes(q)||hit){ const fc=item.querySelector('.folder-children'); if(fc){fc.classList.remove('collapsed');fc.style.maxHeight=fc.scrollHeight+'px';} }
+        } else { item.style.display=name.includes(q)?'':'none'; }
     });
-
-    // ── Expand / Collapse all ──
-    document.getElementById('expandAll').addEventListener('click', () => {
-        document.querySelectorAll('.folder-children').forEach(el => {
-            el.classList.remove('collapsed');
-            el.style.maxHeight = el.scrollHeight + 'px';
-        });
-        document.querySelectorAll('.chevron[id^="chevron-"]').forEach(ch => ch.classList.add('open'));
-    });
-    document.getElementById('collapseAll').addEventListener('click', () => {
-        document.querySelectorAll('.folder-children').forEach(el => {
-            el.classList.add('collapsed');
-            el.style.maxHeight = '0';
-        });
-        document.querySelectorAll('.chevron[id^="chevron-"]').forEach(ch => ch.classList.remove('open'));
-    });
-
-    // ── Search / filter ──
-    const searchInput = document.getElementById('searchInput');
-    const searchClear = document.getElementById('searchClear');
-    const fileCountEl = document.getElementById('fileCount');
-    const emptyState  = document.getElementById('emptyState');
-
-    function filterTree(query) {
-        const q = query.toLowerCase().trim();
-        const allItems = document.querySelectorAll('#fileTree > li.tree-item, #fileTree > li.folder-item');
-        let visible = 0;
-
-        document.querySelectorAll('#fileTree li.tree-item').forEach(item => {
-            const name = (item.dataset.name || '').toLowerCase();
-            const isFolder = item.classList.contains('folder-item');
-
-            if (!q) {
-                item.style.display = '';
-                return;
-            }
-            if (isFolder) {
-                const children = item.querySelectorAll('li.tree-item');
-                let childMatch = false;
-                children.forEach(c => {
-                    const cn = (c.dataset.name || '').toLowerCase();
-                    if (cn.includes(q)) { c.style.display = ''; childMatch = true; }
-                    else c.style.display = 'none';
-                });
-                if (name.includes(q) || childMatch) {
-                    item.style.display = '';
-                    const fc = item.querySelector('.folder-children');
-                    if (fc) { fc.classList.remove('collapsed'); fc.style.maxHeight = fc.scrollHeight + 'px'; }
-                } else {
-                    item.style.display = 'none';
-                }
-            } else {
-                item.style.display = name.includes(q) ? '' : 'none';
-            }
-        });
-
-        if (!q) {
-            allItems.forEach(i => { i.style.display = ''; });
-            document.querySelector('.tree-sep').style.display = '';
-            fileCountEl.textContent = '14 items';
-            emptyState.style.display = 'none';
-            return;
-        }
-
-        document.querySelector('.tree-sep').style.display = 'none';
-
-        visible = [...document.querySelectorAll('#fileTree li.tree-item')].filter(i => i.style.display !== 'none' && !i.classList.contains('folder-item')).length;
-        fileCountEl.textContent = visible + ' 건 일치';
-        emptyState.style.display = visible === 0 ? 'block' : 'none';
+    if (!q) {
+        document.querySelectorAll('.tree-sep').forEach(s=>s.style.display='');
+        fileCountEl.textContent=document.querySelectorAll('#fileTree li.tree-item:not(.folder-item)').length+' items';
+        emptyState.style.display='none';
+    } else {
+        document.querySelectorAll('.tree-sep').forEach(s=>s.style.display='none');
+        const vis=[...document.querySelectorAll('#fileTree li.tree-item')].filter(i=>i.style.display!=='none'&&!i.classList.contains('folder-item')).length;
+        fileCountEl.textContent=vis+' 건 일치'; emptyState.style.display=vis===0?'block':'none';
     }
+}
+searchInput.addEventListener('input',()=>{ searchClear.style.display=searchInput.value?'block':'none'; filterTree(searchInput.value); });
+searchClear.addEventListener('click',()=>{ searchInput.value=''; searchClear.style.display='none'; filterTree(''); searchInput.focus(); });
 
-    searchInput.addEventListener('input', () => {
-        searchClear.style.display = searchInput.value ? 'block' : 'none';
-        filterTree(searchInput.value);
-    });
-    searchClear.addEventListener('click', () => {
-        searchInput.value = '';
-        searchClear.style.display = 'none';
-        filterTree('');
-        searchInput.focus();
-    });
 </script>
 </body>
 </html>
