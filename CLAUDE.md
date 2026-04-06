@@ -6,9 +6,16 @@ This file provides context for AI assistants (Claude Code and others) working in
 
 ## Project Overview
 
-A **pure static HTML application** for Korean corporate project management. It renders a dark-themed workspace UI with multiple views for tracking multi-phase projects—milestones, staffing, and budgets. There is no backend, no build tool, and no package manager. Everything runs in-browser.
+A personal **GitHub Pages site** that hosts a landing workspace and multiple self-contained sub-apps. Each sub-app lives in its own folder and is independently deployable. There is no backend, no build tool, and no package manager — everything is static and runs in-browser.
 
-**Domain language:** Korean (project data, labels, and UI copy are in Korean).
+The repo currently contains two active sub-apps:
+
+1. **Workspace dashboard** (`/index.html`) — landing page that links to sub-apps and mockups
+2. **AMP99 Golf Manager** (`/golf/`) — a React-based golf score tracker for 서울대 AMP99 월례회
+
+It also keeps a mockup archive at `/project-mockup/` with several design/layout variants of a Korean corporate project management UI.
+
+**Domain language:** Korean (labels, data fields, commit-adjacent documentation). Code identifiers remain in English.
 
 ---
 
@@ -16,39 +23,46 @@ A **pure static HTML application** for Korean corporate project management. It r
 
 ```
 /
-├── index.html                    # Main landing page — "seyongeo Workspace"
-│                                 #   Dual-view toggle: Dashboard | Explorer
-├── project-detail.html           # Project detail view (primary)
-├── project-detail2.html          # Design variant
-├── project-detail3.html          # Design variant
-├── project-detail-input.html     # Data entry form (saves to localStorage)
-├── project-detail-fields.html    # Form field component template
-├── project-detail-spec.md        # Full design/spec document (~26KB)
-├── project-detail-data.json      # JSON data schema with Korean field names
-├── project-management.html       # Dashboard (legacy, simpler styling)
-├── project-management-view.html  # Dashboard variant
-├── project-management-w2.html    # Dashboard variant
-├── files/                        # Archived earlier versions of HTML files
-├── files 2/                      # Duplicate archive
-├── files.zip                     # Archived zip
-├── test_memo.txt                 # Scratch file (Korean "테스트")
-└── .claude/settings.local.json   # Claude Code local permissions
+├── index.html                    # "seyongeo Workspace" landing dashboard
+├── test_memo.txt                 # Scratch file
+├── files.zip                     # Legacy archive (kept for now)
+├── golf/                         # ── Sub-app: AMP99 Golf Manager ──
+│   ├── index.html                #   React 18 + Babel standalone SPA
+│   └── golf-scores.md            #   Single source of truth for members & rounds
+├── project-mockup/               # ── Static HTML design variants ──
+│   ├── index.html
+│   ├── project-detail.html            # Primary detail page
+│   ├── project-detail2.html           # Variant
+│   ├── project-detail3.html           # Variant
+│   ├── project-detail-input.html      # localStorage data-entry form
+│   ├── project-detail-fields.html     # Form field component template
+│   ├── project-detail-spec.md         # Design/spec (~26KB)
+│   ├── project-detail-data.json       # JSON schema (Korean keys)
+│   ├── project-management.html        # Dashboard (legacy)
+│   ├── project-management-view.html   # Dashboard variant
+│   └── project-management-w2.html     # Dashboard variant
+└── .claude/                      # Claude Code local config
 ```
+
+> **Removed (do not recreate):** `files/`, `files 2/` — earlier HTML archive folders that were deleted. The contents were duplicates of files now living under `project-mockup/`.
 
 ---
 
 ## Technology Stack
 
-| Layer | Technology |
-|-------|-----------|
-| Markup | HTML5 (no templates, no preprocessors) |
-| Styling | CSS3 with custom properties, embedded `<style>` tags |
-| Scripting | Vanilla JavaScript, embedded `<script>` tags |
-| Fonts | Google Fonts CDN — Instrument Sans + JetBrains Mono |
-| Data persistence | Browser `localStorage` (key: `pgDetailData`) |
-| Deployment | GitHub Pages (static files, no build step) |
+| Area | Tech |
+|------|------|
+| Hosting | GitHub Pages (static files, no build step) |
+| Markup / styling | HTML5 + CSS3 with custom properties, embedded `<style>` |
+| Root dashboard + mockups | Vanilla JavaScript, embedded `<script>` |
+| Golf sub-app | **React 18 + Babel standalone** (CDN), JSX transformed in-browser via `<script type="text/babel">` |
+| Fonts | Google Fonts CDN — Instrument Sans + JetBrains Mono (root + mockups); Apple SD Gothic Neo / Noto Sans KR (golf) |
+| Persistence | Mixed — see "Data Flow" section below |
 | Build tools | **None** |
 | Package manager | **None** |
+| Tests / CI | **None** |
+
+> **React is allowed only inside `golf/`.** The root dashboard and everything under `project-mockup/` must remain framework-free. When adding a new sub-app, pick one style and stay consistent inside that sub-app's folder.
 
 ---
 
@@ -56,75 +70,108 @@ A **pure static HTML application** for Korean corporate project management. It r
 
 ### Running Locally
 
-Open any HTML file directly in a browser — no server required.
+Open any HTML file directly in a browser — no server required:
 
 ```bash
-open index.html
-# or
-open project-detail.html
+open index.html              # root dashboard
+open golf/index.html         # golf app
+open project-mockup/project-detail.html
 ```
 
-For live-reload during editing, a simple static server works:
+For consistent relative-path behavior (e.g. `golf/index.html` fetching `./golf-scores.md`), use a simple static server:
 
 ```bash
 python3 -m http.server 8080
-# Then visit http://localhost:8080
+# visit http://localhost:8080
 ```
 
-### Data Flow
+### Deployment
 
-1. User fills out `project-detail-input.html`
-2. Form saves JSON to `localStorage` under key `pgDetailData`
-3. `project-detail.html` reads `pgDetailData` on load and renders the UI dynamically
+- Pushing to `main` deploys automatically via GitHub Pages.
+- No CI/CD, no preview environments.
 
-### No Build Step
+---
 
-Files are deployed as-is. There is no compilation, bundling, transpiling, or minification pipeline.
+## Data Flow
+
+This is the single most important thing to get right — **each sub-app has its own persistence model.** Do NOT mix them.
+
+### 1. Golf app (`golf/`)
+
+- **Source of truth:** `golf/golf-scores.md` — a markdown file with two sections (`## 회원 목록` and `## 라운드 기록`) containing pipe-delimited tables. Both members and rounds live here.
+- **Load:** on mount, the app `fetch`es `./golf-scores.md?<timestamp>` (cache-busted) and parses it via `parseMD` in [golf/index.html:38](golf/index.html#L38).
+- **Save:** `saveMDToGitHub` in [golf/index.html:103](golf/index.html#L103) PUTs the regenerated markdown back to `golf-scores.md` via the **GitHub Contents API** (`https://api.github.com/repos/seyongeo/seyongeo.github.io/contents/golf/golf-scores.md`) using a user-supplied Personal Access Token. The commit message is always `Update golf-scores.md via AMP99 Golf Manager`.
+- **Fallback:** if no PAT is set, the app downloads the markdown as a file and prompts the user to commit manually.
+- **`localStorage` — secrets only:**
+  - `amp99_github_pat` — GitHub PAT for the save path above
+  - `amp99_apikey` — Anthropic API key for the photo AI extraction feature
+  - **No game data is cached in `localStorage`.** The older `amp99m` / `amp99r` cache keys were removed in the "single source of truth" refactor — do not re-introduce them.
+- **Photo score entry:** [golf/index.html:141](golf/index.html#L141) `PhotoModal` calls Anthropic's `/v1/messages` endpoint directly from the browser (`anthropic-dangerous-direct-browser-access: true`) with `model: 'claude-opus-4-5'` to extract scores from a photo of a scoreboard. If unknown member names are detected, they are auto-added to the member list.
+
+### 2. Mockup pages (`project-mockup/`)
+
+- **Persistence:** `localStorage` key **`pgDetailData`**.
+- **Flow:**
+  1. User fills out `project-detail-input.html`
+  2. Form saves JSON to `localStorage.pgDetailData`
+  3. `project-detail.html` (and variants) reads `pgDetailData` on load and renders the UI
+- No file I/O, no GitHub API, no network calls.
+
+### 3. Root dashboard (`index.html`)
+
+- Pure static navigation. No data persistence of its own.
 
 ---
 
 ## Design System
 
-All pages share a consistent dark-theme design system defined via CSS custom properties.
+The repo has **two distinct visual themes** — don't mix them.
 
-### Color Palette
+### Theme A: Navy / purple (root dashboard + `project-mockup/`)
 
-```css
---color-bg:               #0a0e1a   /* darkest background */
---color-surface:          #141925   /* card surfaces */
---color-surface-elevated: #1c2331   /* elevated elements */
---color-border:           #252d3f   /* borders */
---color-text-primary:     #e4e8f0   /* main text */
---color-text-secondary:   #8b95a8   /* secondary text */
---color-text-tertiary:    #5a6375   /* muted text */
---color-accent:           #4f7cff   /* blue accent */
---color-accent-light:     #6b91ff
---color-success:          #22c55e   /* green */
---color-warning:          #f59e0b   /* amber */
---color-danger:           #ef4444   /* red */
---color-purple:           #a855f7
---color-cyan:             #06b6d4
-```
-
-### Typography
-
-- **Primary font:** `Instrument Sans` (weights: 400, 500, 600, 700)
-- **Monospace font:** `JetBrains Mono` (weights: 400, 500)
-
-### Layout Pattern
-
-- Fixed sidebar: 280px wide with `slideInLeft 0.5s ease-out` animation
-- Fixed header: `slideInDown 0.5s ease-out`
-- Content cards: `fadeInUp 0.5s ease-out` with staggered delays
-- CSS Grid for card grids; Flexbox for rows
-
-### Animations
+CSS custom properties defined on `:root` in [index.html](index.html):
 
 ```css
-slideInLeft   0.5s ease-out   /* sidebar */
-slideInDown   0.5s ease-out   /* header */
-fadeInUp      0.5s ease-out   /* cards, staggered with animation-delay */
+--bg:               #0a0e1a   /* darkest background */
+--surface:          #141925
+--surface-elevated: #1c2331
+--surface-hover:    #1f2840
+--border:           #252d3f
+--text-primary:     #e4e8f0
+--text-secondary:   #8b95a8
+--text-tertiary:    #5a6375
+--accent:           #4f7cff   /* primary blue */
+--accent-light:     #6b91ff
+--success:          #22c55e
+--warning:          #f59e0b
+--danger:           #ef4444
+--purple:           #a855f7
+--cyan:             #06b6d4
+--orange:           #f97316
+--pink:             #ec4899
+--teal:             #14b8a6
 ```
+
+- **Fonts:** `Instrument Sans` (400/500/600/700) for UI, `JetBrains Mono` (400/500) for code/metadata
+- **Ambient gradients:** radial blobs via `body::before` / `body::after` (navy + purple)
+- **Layout idioms:** centered column (`max-width: 1060px`), card grids with `fadeInUp 0.5s ease-out`, `slideInLeft` sidebars, `slideInDown` headers
+
+### Theme B: Dark green (`golf/index.html`)
+
+Defined as a JavaScript object `C` at [golf/index.html:26](golf/index.html#L26) — **not** CSS variables:
+
+```js
+const C = {
+  bg:"#080f08", surface:"#101a10", card:"#162016", border:"#243424",
+  accent:"#4ade80", accentLow:"rgba(74,222,128,0.12)", text:"#dff0df",
+  dim:"#4d754d", gold:"#fbbf24", silver:"#94a3b8", bronze:"#b87333",
+  pink:"#f9a8d4", blue:"#93c5fd", red:"#f87171",
+};
+```
+
+- **Fonts:** `Apple SD Gothic Neo`, `Noto Sans KR` (Korean-first, mobile optimized)
+- **Inline style objects:** reusable constants near the top of the file (`iSt`, `thSt`, `tdSt`, `cardSt`, `btn(variant)`, `gTag(gender)`) — reuse these instead of writing ad-hoc styles
+- **Layout:** mobile-sized single column with a sticky bottom tab bar (5 tabs: 성적조회 / 성적입력 / 회원관리 / 통계 / 설정)
 
 ---
 
@@ -137,7 +184,7 @@ fadeInUp      0.5s ease-out   /* cards, staggered with animation-delay */
 - Each HTML file is self-contained and independently deployable.
 - Prefer duplicating styles/scripts across files over creating shared assets (consistent with existing pattern).
 
-### CSS
+### CSS (root dashboard + mockups)
 
 - Use CSS custom properties (variables) for all colors and consistent values.
 - Do not add utility-class frameworks (Tailwind, Bootstrap, etc.).
@@ -145,50 +192,79 @@ fadeInUp      0.5s ease-out   /* cards, staggered with animation-delay */
 
 ### JavaScript
 
-- Vanilla JS only — no frameworks (React, Vue, etc.).
-- DOM manipulation via `querySelector`/`querySelectorAll`.
-- Data persistence: always use `localStorage` key `pgDetailData`.
-- No `fetch`/API calls to external services.
+- **Root dashboard + `project-mockup/`:** vanilla JS only, no frameworks. DOM via `querySelector` / `querySelectorAll`.
+- **`golf/`:** React 18 functional components with hooks. Render root: `ReactDOM.createRoot(document.getElementById("root")).render(<App/>)`. Small helpers at module top (`hdScore`, `uid`, `avg`, `rankColor`, `parseMD`, `generateMD`).
+- Short, single-letter variable names (`C`, `sc`, `nr`, `h`, `m`, `r`) are idiomatic inside `golf/index.html` — keep them if editing that file, don't rename for clarity.
+- No bundler / module system. No `import`/`export`. Everything is global within the `<script>` block.
 
 ### Korean Language
 
 - All UI labels, data fields, and user-facing text are in Korean.
-- JSON data schema uses Korean keys (e.g., `프로젝트명`, `담당자`, `마일스톤_진행현황`).
-- Status values: `완료` (complete), `진행중` (in progress), `대기` (waiting).
-- Staffing levels: `특급` (expert), `고급` (senior), `중급` (mid), `초급` (junior).
+- Mockup JSON data uses Korean keys (e.g. `프로젝트명`, `담당자`, `마일스톤_진행현황`).
+- Status values in mockups: `완료` / `진행중` / `대기`. Staffing levels: `특급` / `고급` / `중급` / `초급`.
+- Golf data uses Korean column headers: `스코어`, `신페리오점수`, `버디`, `파`, `보기`, `장타`, `니어`.
+- Golf handicap rule: `hdScore = 스코어 - 72` ([golf/index.html:32](golf/index.html#L32)). `신페리오점수` is a separate user-entered value (not derived from `스코어`).
 
 ### File Naming
 
-- HTML page variants use numeric suffixes: `project-detail.html`, `project-detail2.html`, `project-detail3.html`.
-- Use kebab-case for all file names.
+- kebab-case for file names.
+- Mockup variants use numeric suffixes: `project-detail.html`, `project-detail2.html`, `project-detail3.html`.
 
 ---
 
-## Data Schema
+## Data Schemas
 
-The primary data structure stored in `localStorage`:
+### Golf — `golf/golf-scores.md` format
+
+```markdown
+# 서울대 AMP99 골프 성적 데이터
+
+> 이 파일은 서울대 AMP99 월례회 성적 데이터입니다.
+> golf/index.html 앱이 이 파일을 읽어 데이터를 로드합니다.
+
+---
+
+## 회원 목록
+
+| id | 이름 | 성별 |
+|----|------|------|
+| <uid> | <name> | 남 or 여 |
+...
+
+---
+
+## 라운드 기록
+
+### round: <round_id>
+- 날짜: YYYY-MM-DD
+- 코스: <course name>
+
+| 회원id | 이름 | 스코어 | 신페리오점수 | 버디 | 파 | 보기 | 장타 | 니어 |
+|--------|------|--------|------------|------|----|------|------|------|
+| <uid> | <name> | <int> | <number> | <int> | <int> | <int> | O or - | O or - |
+...
+```
+
+- `장타` / `니어` are booleans rendered as `O` / `-`
+- Member and round IDs are generated client-side via `uid()` — 7-char random base-36 strings
+- `parseMD` / `generateMD` are the only functions that should read/write this format — reuse them, don't hand-roll new parsers
+
+### Mockups — `localStorage.pgDetailData`
 
 ```json
 {
   "프로젝트_진행_상황_요약": {
-    "프로젝트명": "",
-    "고객사명": "",
-    "계약_시작일": "",
-    "계약_종료일": "",
-    "우선순위": "",
-    "전체_진행률": "",
-    "경과_일수": "",
-    "남은_일수": "",
+    "프로젝트명": "", "고객사명": "",
+    "계약_시작일": "", "계약_종료일": "",
+    "우선순위": "", "전체_진행률": "",
+    "경과_일수": "", "남은_일수": "",
     "담당자": ""
   },
   "마일스톤_진행현황": [
     {
-      "단계_번호": 1,
-      "단계명": "",
-      "시작일": "",
-      "종료일": "",
-      "상태": "",
-      "작업_내용": [],
+      "단계_번호": 1, "단계명": "",
+      "시작일": "", "종료일": "",
+      "상태": "", "작업_내용": [],
       "단계_진행률": ""
     }
   ],
@@ -197,21 +273,24 @@ The primary data structure stored in `localStorage`:
 }
 ```
 
+See `project-mockup/project-detail-data.json` for the canonical reference.
+
 ---
 
 ## Git Workflow
 
-- **Main branch:** `main`
-- **Feature branches:** `claude/<description>` pattern (e.g., `claude/add-claude-documentation-B1rUl`)
-- No CI/CD pipelines exist; pushes to `main` deploy automatically via GitHub Pages.
-- Commit messages are imperative and descriptive (e.g., "Replace dashboard table with card grid layout").
+- **Main branch:** `main` (auto-deploys via GitHub Pages)
+- **Feature branches:** `claude/<description>` pattern for AI-assisted work (e.g. `claude/add-claude-documentation-B1rUl`)
+- Commit messages: imperative, descriptive (e.g. "Replace dashboard table with card grid layout", "Fix 신페리오 점수/핸디 semantics")
+- Automated commits from the golf app use a fixed message: `Update golf-scores.md via AMP99 Golf Manager` — these are expected and should not be squashed or rewritten.
 
 ---
 
 ## Reference Documents
 
-- **`project-detail-spec.md`** — Comprehensive visual and functional specification for `project-detail.html`. Consult this before making changes to the detail page layout, sections, or data rendering logic.
-- **`project-detail-data.json`** — Canonical JSON schema. Use as the reference for all field names and data structure.
+- **`project-mockup/project-detail-spec.md`** — full visual and functional spec for `project-detail.html`. Consult before restructuring the detail page layout or data rendering.
+- **`project-mockup/project-detail-data.json`** — canonical schema for `pgDetailData`. Use for all field names in the mockups.
+- **`golf/golf-scores.md`** — live data for the golf app; also serves as the schema reference (the format is documented inline at the top of the file).
 
 ---
 
@@ -222,8 +301,9 @@ The following do NOT exist in this project and should not be introduced without 
 - Build tools (webpack, vite, rollup, esbuild)
 - Package managers (npm, yarn, pnpm)
 - CSS preprocessors (Sass, Less)
-- JavaScript frameworks (React, Vue, Svelte, etc.)
 - TypeScript
-- Backend services or APIs
+- A backend server or database
 - Test frameworks
 - CI/CD pipelines
+- External JS frameworks in the root dashboard or `project-mockup/` (React is confined to `golf/`)
+- Reintroducing `localStorage` caching of golf game data (members / rounds) — `golf-scores.md` is the only source of truth
