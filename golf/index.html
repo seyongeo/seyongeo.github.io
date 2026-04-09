@@ -35,98 +35,33 @@ const avg = (a) => a.length ? a.reduce((x,y)=>x+y,0)/a.length : 0;
 const rankColor = (r) => r===1?C.gold:r===2?C.silver:r===3?C.bronze:C.text;
 
 
-function parseMD(text) {
-  try {
-    const members = [];
-    const memberSection = text.match(/## 회원 목록([\s\S]*?)(?=##|$)/);
-    if (memberSection) {
-      const rows = memberSection[1].split('\n').filter(l => l.startsWith('|') && !l.includes('---') && !l.includes('id'));
-      rows.forEach(row => {
-        const cols = row.split('|').map(c => c.trim()).filter(Boolean);
-        if (cols.length >= 3) members.push({id:cols[0], name:cols[1], gender:cols[2]});
-      });
-    }
-    const rounds = [];
-    const roundBlocks = text.split(/### round: /);
-    roundBlocks.slice(1).forEach(block => {
-      const idMatch = block.match(/^(\S+)/);
-      const dateMatch = block.match(/날짜:\s*(\S+)/);
-      const courseMatch = block.match(/코스:\s*(.+)/);
-      if (!idMatch || !dateMatch || !courseMatch) return;
-      const scores = [];
-      const tableRows = block.split('\n').filter(l => l.startsWith('|') && !l.includes('---') && !l.includes('회원id'));
-      tableRows.forEach(row => {
-        const cols = row.split('|').map(c => c.trim()).filter(Boolean);
-        if (cols.length >= 7) {
-          scores.push({
-            memberId: cols[0],
-            score:    parseInt(cols[2])   || 0,
-            hd:       parseFloat(cols[3]) || 0,
-            buddies:  parseInt(cols[4])   || 0,
-            pars:     parseInt(cols[5])   || 0,
-            bogeys:   parseInt(cols[6])   || 0,
-            longest:  cols[7] === 'O',
-            nearest:  cols[8] === 'O',
-          });
-        }
-      });
-      rounds.push({id:idMatch[1], date:dateMatch[1], course:courseMatch[1].trim(), scores});
-    });
-    return {members, rounds};
-  } catch(e) {}
-  return null;
-}
+// ── BFF helpers (replaces all golf-scores.md / GitHub PAT logic) ──
+const bffBase = () => (localStorage.getItem('amp99_bff_url') || '').replace(/\/$/, '');
+const bffPass = () => localStorage.getItem('amp99_bff_pass') || '';
 
-function generateMD(members, rounds) {
-  let md = '# 서울대 AMP99 골프 성적 데이터\n\n> 이 파일은 서울대 AMP99 월례회 성적 데이터입니다.\n> golf/index.html 앱이 이 파일을 읽어 데이터를 로드합니다.\n\n---\n\n## 회원 목록\n\n| id | 이름 | 성별 |\n|----|------|------|\n';
-  members.forEach(m => { md += `| ${m.id} | ${m.name} | ${m.gender} |\n`; });
-  md += '\n---\n\n## 라운드 기록\n';
-  rounds.forEach(r => {
-    md += `\n### round: ${r.id}\n- 날짜: ${r.date}\n- 코스: ${r.course}\n\n| 회원id | 이름 | 스코어 | 신페리오점수 | 버디 | 파 | 보기 | 장타 | 니어 |\n|--------|------|--------|------------|------|----|------|------|------|\n`;
-    r.scores.forEach(s => {
-      const m = members.find(x => x.id === s.memberId) || {name:'?'};
-      md += `| ${s.memberId} | ${m.name} | ${s.score} | ${s.hd} | ${s.buddies} | ${s.pars} | ${s.bogeys} | ${s.longest?'O':'-'} | ${s.nearest?'O':'-'} |\n`;
-    });
-  });
-  return md;
-}
-
-function downloadMD(members, rounds) {
-  const md = generateMD(members, rounds);
-  const blob = new Blob([md], {type:'text/markdown'});
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url; a.download = 'golf-scores.md'; a.click();
-  URL.revokeObjectURL(url);
-}
-
-async function saveMDToGitHub(members, rounds) {
-  const pat = localStorage.getItem('amp99_github_pat');
-  if (!pat) {
-    downloadMD(members, rounds);
-    alert('GitHub PAT가 설정되지 않아 MD 파일을 다운로드했습니다.\n파일을 직접 커밋해 주세요.\n(설정 탭에서 PAT를 입력하면 자동 저장됩니다.)');
-    return {ok: false, error: 'no_pat'};
+async function bffFetch(path, opts = {}) {
+  const url = bffBase();
+  if (!url) throw new Error('BFF URL이 설정되지 않았습니다 (설정 탭에서 입력해 주세요)');
+  const headers = {
+    'X-Shared-Password': bffPass(),
+    'Content-Type': 'application/json',
+    ...(opts.adminAuth ? {'X-Admin-Password': opts.adminAuth} : {}),
+    ...(opts.headers || {}),
+  };
+  const init = {method: opts.method || 'GET', headers};
+  if (opts.body !== undefined) init.body = opts.body;
+  const res = await fetch(`${url}${path}`, init);
+  if (res.status === 204) return null;
+  if (res.status === 401) throw new Error('BFF 비밀번호가 잘못되었습니다');
+  if (res.status === 429) {
+    const data = await res.json().catch(() => ({}));
+    throw new Error(`이번 달 한도 초과 (${data.used ?? '?'}/${data.cap ?? '?'})`);
   }
-  try {
-    const apiBase = 'https://api.github.com/repos/seyongeo/seyongeo.github.io/contents/golf/golf-scores.md';
-    const shaRes = await fetch(apiBase, {
-      headers: {'Authorization': `token ${pat}`, 'Accept': 'application/vnd.github+json'},
-    });
-    if (!shaRes.ok) { const t = await shaRes.text(); throw new Error(`SHA 조회 실패: ${shaRes.status} ${t}`); }
-    const shaData = await shaRes.json();
-    const sha = shaData.sha;
-    const mdContent = generateMD(members, rounds);
-    const encoded = btoa(unescape(encodeURIComponent(mdContent)));
-    const putRes = await fetch(apiBase, {
-      method: 'PUT',
-      headers: {'Authorization': `token ${pat}`, 'Accept': 'application/vnd.github+json', 'Content-Type': 'application/json'},
-      body: JSON.stringify({message: 'Update golf-scores.md via AMP99 Golf Manager', content: encoded, sha}),
-    });
-    if (!putRes.ok) { const t = await putRes.text(); throw new Error(`저장 실패: ${putRes.status} ${t}`); }
-    return {ok: true};
-  } catch(e) {
-    return {ok: false, error: e.message || String(e)};
+  if (!res.ok) {
+    const t = await res.text();
+    throw new Error(`서버 오류: ${res.status} ${t}`);
   }
+  return res.json();
 }
 
 const iSt = {background:"#060c06",border:`1px solid ${C.border}`,color:C.text,borderRadius:7,padding:"8px 10px",fontSize:13,outline:"none",width:"100%",boxSizing:"border-box",fontFamily:"inherit"};
@@ -159,27 +94,18 @@ function PhotoModal({members, onClose, onApply}) {
   };
 
   const analyze = async () => {
-    const apiKey = localStorage.getItem('amp99_apikey') || '';
-    if (!apiKey.trim()) { setError('설정 탭에서 Anthropic API 키를 먼저 입력해 주세요'); return; }
     if (!imgData) { setError('이미지를 선택하세요'); return; }
+    if (!bffBase()) { setError('설정 탭에서 BFF URL을 먼저 입력해 주세요'); return; }
     setLoading(true); setError('');
     try {
-      const res = await fetch('https://api.anthropic.com/v1/messages', {
-        method: 'POST',
-        headers: {
-          'x-api-key': apiKey.trim(),
-          'anthropic-version': '2023-06-01',
-          'content-type': 'application/json',
-          'anthropic-dangerous-direct-browser-access': 'true',
-        },
-        body: JSON.stringify({
-          model: 'claude-opus-4-5',
-          max_tokens: 2048,
-          messages: [{
-            role: 'user',
-            content: [
-              {type:'image', source:{type:'base64', media_type:imgType, data:imgData}},
-              {type:'text', text:`이 골프 성적표에서 두 가지 목록을 추출하여 아래 JSON 형식으로 반환해주세요.
+      const requestBody = {
+        model: 'claude-opus-4-5',
+        max_tokens: 2048,
+        messages: [{
+          role: 'user',
+          content: [
+            {type:'image', source:{type:'base64', media_type:imgType, data:imgData}},
+            {type:'text', text:`이 골프 성적표에서 두 가지 목록을 추출하여 아래 JSON 형식으로 반환해주세요.
 
 【출력 형식】
 {
@@ -202,14 +128,26 @@ function PhotoModal({members, onClose, onApply}) {
 - 예) "김앤드류 18 72" → {"name":"김앤드류", "periScore":72}
 - 모든 행을 빠짐없이 추출
 
+⚠️ 한글 이름 OCR 주의사항 (매우 중요):
+- 비슷하게 생긴 글자를 혼동하지 마세요. 사진을 픽셀 단위로 정밀하게 다시 보고 정확히 추출하세요:
+  - 김 vs 길 (ㅁ과 ㄹ의 차이 — 가로획 개수)
+  - 박 vs 빅 (ㅏ와 ㅣ의 차이 — 짧은 가로획 유무)
+  - 정 vs 종 (ㅓ와 ㅗ의 차이 — 가로획 위치)
+  - 송 vs 송 (받침 ㅇ과 ㅁ 구분)
+  - 윤 vs 운 (받침 ㄴ과 ㄴ을 구분)
+  - 어세롱 vs 어세룡 ('롱'과 '룡' — ㅗ와 ㅛ의 점 개수)
+- 같은 이름이 두 번 나오는 것이 자연스러우면 동명이인일 수 있으니 그대로 두 번 출력하세요.
+- 흐린 글씨, 손글씨, 긁힌 글자라도 추측하지 말고 가장 가능성 높은 글자를 신중히 고르세요.
+
 ⚠️ scores와 perio는 완전히 독립적으로 추출. 행 번호로 연결하지 말 것.
 JSON만 반환, 설명 없이.`},
-            ],
-          }],
-        }),
+          ],
+        }],
+      };
+      const data = await bffFetch('/api/golf/analyze', {
+        method: 'POST',
+        body: JSON.stringify(requestBody),
       });
-      if (!res.ok) { const e = await res.text(); throw new Error(e); }
-      const data = await res.json();
       const text = data.content[0].text.trim();
       const jsonObjStr = text.match(/\{[\s\S]*\}/)?.[0];
       if (!jsonObjStr) throw new Error('JSON 파싱 실패');
@@ -226,10 +164,24 @@ JSON만 반환, 설명 없이.`},
       const extracted = (obj.scores || []);
       const matched = {};
       const newMembers = [];
+      // Greedy claim: each member can only be matched once. This handles
+      // homonyms (e.g. two 김정섭) — first row gets the first 김정섭, second
+      // row gets the second 김정섭. Without this, both would map to the same
+      // member id and one row would silently disappear.
+      const claimed = new Set();
+      const findFreeMember = (name) => {
+        // 1. exact match, unclaimed
+        let m = members.find(x => !claimed.has(x.id) && x.name === name);
+        if (m) return m;
+        // 2. fuzzy contains match, unclaimed
+        m = members.find(x => !claimed.has(x.id) && (x.name.includes(name) || name.includes(x.name)));
+        return m || null;
+      };
       extracted.forEach(row => {
         const periScore = findPeri(row.name);
-        const member = members.find(m => m.name === row.name || m.name.includes(row.name) || row.name.includes(m.name));
+        const member = findFreeMember(row.name);
         if (member) {
+          claimed.add(member.id);
           matched[member.id] = {on:true, score:String(row.score||''), hd:String(periScore), buddies:row.buddies||0, pars:row.pars||0, bogeys:row.bogeys||0, longest:!!row.longest, nearest:!!row.nearest};
         } else {
           newMembers.push({name:row.name, gender:row.gender||'남', score:row.score, hd:periScore, buddies:row.buddies||0, pars:row.pars||0, bogeys:row.bogeys||0, longest:!!row.longest, nearest:!!row.nearest});
@@ -266,51 +218,171 @@ JSON만 반환, 설명 없이.`},
   );
 }
 
-function EntryTab({members, sc, setSc, form, setForm, setShowPhoto, onSave, goEntry, setTab, numIn}) {
-  const [pending, setPending] = useState([]); // [{tempId, name, score, hd, buddies, pars, bogeys, longest, nearest}]
+function EntryTab({members, pendingNewMembers, sc, setSc, form, setForm, setShowPhoto, onSave, goEntry, cancelEntry}) {
+  // effectiveMembers = persisted members + photo-detected new members not yet saved.
+  // EntryTab treats them uniformly for display and lookup.
+  const effectiveMembers = [...members, ...pendingNewMembers];
 
-  const addRow = () => setPending(p => [...p, {tempId:uid(), name:'', score:'', hd:'', buddies:'', pars:'', bogeys:'', longest:false, nearest:false}]);
+  // pending = ad-hoc rows the user typed in for people not yet in the member master.
+  // These always start in edit mode because they have no existing data to display.
+  const [pending, setPending] = useState([]);
+
+  // checked = set of row IDs (member id for sc rows, tempId for pending rows) the user
+  // has checked. The 수정 / 삭제 buttons act on these.
+  const [checked, setChecked] = useState(new Set());
+
+  // editing = set of row IDs currently in inline edit mode (name + all score fields editable).
+  // Triggered by 수정 button on checked rows.
+  const [editing, setEditing] = useState(new Set());
+
+  // editedNames = { memberId → {name, gender} } overlay so that the name edits stay
+  // visible during the EntryTab session. Sent to onSave via the editedMembers arg.
+  const [editedNames, setEditedNames] = useState({});
+
+  const addRow = () => {
+    const tempId = uid();
+    setPending(p => [...p, {tempId, name:'', score:'', hd:'', buddies:'', pars:'', bogeys:'', longest:false, nearest:false}]);
+    setEditing(e => { const n = new Set(e); n.add(tempId); return n; });
+  };
   const updPending = (tempId, field, val) => setPending(p => p.map(r => r.tempId===tempId ? {...r, [field]:val} : r));
-  const removePending = (tempId) => setPending(p => p.filter(r => r.tempId!==tempId));
-  const removeParticipant = (id) => setSc(p => { const n={...p}; delete n[id]; return n; });
+
+  const toggleCheck = (id) => setChecked(s => {
+    const n = new Set(s);
+    if (n.has(id)) n.delete(id); else n.add(id);
+    return n;
+  });
+  const toggleAll = () => {
+    const allIds = [...Object.keys(sc), ...pending.map(p => p.tempId)];
+    setChecked(s => s.size === allIds.length ? new Set() : new Set(allIds));
+  };
+
+  // Toggle edit mode for the checked rows. If ALL checked rows are already
+  // editing, exit edit mode (수정 완료); otherwise enter edit mode for all
+  // checked rows. This is the "수정 ↔ 수정 완료" toggle behavior.
+  const toggleEditMode = () => {
+    if (checked.size === 0) { alert('수정할 행을 체크해 주세요'); return; }
+    const allEditing = [...checked].every(id => editing.has(id));
+    setEditing(e => {
+      const n = new Set(e);
+      if (allEditing) {
+        checked.forEach(id => n.delete(id));
+      } else {
+        checked.forEach(id => n.add(id));
+      }
+      return n;
+    });
+  };
+
+  // Are all checked rows currently in edit mode? Used to flip the button label.
+  const checkedAreEditing = checked.size > 0 && [...checked].every(id => editing.has(id));
+
+  const deleteChecked = () => {
+    if (checked.size === 0) { alert('삭제할 행을 체크해 주세요'); return; }
+    if (!confirm(`${checked.size}개 행을 이번 라운드에서 제외합니다 (회원 자체는 삭제되지 않습니다). 계속할까요?`)) return;
+    setSc(p => {
+      const n = {...p};
+      checked.forEach(id => { delete n[id]; });
+      return n;
+    });
+    setPending(p => p.filter(r => !checked.has(r.tempId)));
+    setEditing(e => { const n = new Set(e); checked.forEach(id => n.delete(id)); return n; });
+    setEditedNames(en => {
+      const n = {...en};
+      checked.forEach(id => { delete n[id]; });
+      return n;
+    });
+    setChecked(new Set());
+  };
+
+  const updateEditedName = (mid, field, val) => {
+    setEditedNames(p => ({
+      ...p,
+      [mid]: {
+        name: p[mid]?.name ?? (effectiveMembers.find(m => m.id === mid)?.name || ''),
+        gender: p[mid]?.gender ?? (effectiveMembers.find(m => m.id === mid)?.gender || '남'),
+        [field]: val,
+      },
+    }));
+  };
 
   const handleSave = () => {
+    // Validate all rows still in sc (read-only or editing both checked)
     for (const [mid, v] of Object.entries(sc)) {
-      const m = members.find(x=>x.id===mid) || {name:'알 수 없음'};
-      if (v.score==='' || v.hd==='') { alert(`[${m.name}] 스코어 또는 신페리오 점수를 입력해 주세요`); return; }
+      const masterName = effectiveMembers.find(x => x.id === mid)?.name || '?';
+      const displayName = editedNames[mid]?.name || masterName;
+      if (v.score === '' || v.hd === '') {
+        alert(`[${displayName}] 스코어 또는 신페리오 점수를 입력해 주세요`);
+        return;
+      }
     }
+    // Validate all pending rows
     for (const r of pending) {
       if (!r.name.trim())  { alert('이름을 입력해 주세요'); return; }
       if (r.score==='' || r.hd==='') { alert(`[${r.name}] 스코어 또는 신페리오 점수를 입력해 주세요`); return; }
     }
-    const newMembers = [...members];
+    // Build new members from pending rows (name dedup against effective member list)
+    const newMembers = [];
     const extra = {};
     for (const r of pending) {
-      let m = newMembers.find(x => x.name === r.name.trim());
-      if (!m) { m = {id:uid(), name:r.name.trim(), gender:'남'}; newMembers.push(m); }
-      extra[m.id] = {score:r.score, hd:r.hd, buddies:r.buddies||0, pars:r.pars||0, bogeys:r.bogeys||0, longest:!!r.longest, nearest:!!r.nearest};
+      let m = effectiveMembers.find(x => x.name === r.name.trim());
+      if (!m) {
+        m = {id:uid(), name:r.name.trim(), gender:'남'};
+        newMembers.push(m);
+      }
+      extra[m.id] = {
+        on: true,
+        score: r.score, hd: r.hd,
+        buddies: r.buddies || 0, pars: r.pars || 0, bogeys: r.bogeys || 0,
+        longest: !!r.longest, nearest: !!r.nearest,
+      };
     }
-    onSave({...sc, ...extra}, newMembers);
+    // Build edited members list (only ones whose name or gender actually changed)
+    const editedMembers = [];
+    for (const [mid, ed] of Object.entries(editedNames)) {
+      const orig = effectiveMembers.find(m => m.id === mid);
+      if (!orig) continue;
+      if (ed.name !== orig.name || ed.gender !== orig.gender) {
+        editedMembers.push({id: mid, name: ed.name.trim(), gender: ed.gender});
+      }
+    }
+    onSave({...sc, ...extra}, newMembers, editedMembers);
   };
 
   const participating = Object.keys(sc);
   const hasRows = participating.length > 0 || pending.length > 0;
+  const allRowIds = [...participating, ...pending.map(p => p.tempId)];
+  const allChecked = allRowIds.length > 0 && allRowIds.every(id => checked.has(id));
 
-  const numCell = (val, onChange, w=48) => (
-    <input type="number" min="0"
-      style={{background:"#060c06",border:`1px solid ${C.border}`,color:C.text,borderRadius:5,
-        padding:"4px 3px",width:w,textAlign:"center",fontSize:12,outline:"none",fontFamily:"inherit"}}
-      value={val ?? ""} onChange={e=>onChange(e.target.value)} placeholder="0"/>
+  // Helpers
+  const numCell = (val, onChange, disabled = false, w = 48) => (
+    <input type="number" min="0" disabled={disabled}
+      style={{background:"#060c06",border:`1px solid ${C.border}`,color:disabled?C.dim:C.text,borderRadius:5,
+        padding:"4px 3px",width:w,textAlign:"center",fontSize:12,outline:"none",fontFamily:"inherit",
+        opacity: disabled ? 0.6 : 1}}
+      value={val ?? ""} onChange={e=>!disabled && onChange(e.target.value)} placeholder="0"/>
   );
 
-  const chkToggle = (mid, field) => setSc(p => ({...p,[mid]:{...p[mid],[field]:!p[mid]?.[field]}}));
-  const chkTogglePending = (tempId, field) => setPending(p => p.map(r => r.tempId===tempId ? {...r,[field]:!r[field]} : r));
-  const chkBtn = (active, onClick) => (
-    <button onClick={onClick} style={{padding:"2px 5px",borderRadius:5,border:`1px solid ${active?C.accent:C.border}`,
-      background:active?C.accentLow:"transparent",color:active?C.accent:C.dim,fontSize:11,cursor:"pointer",fontFamily:"inherit",fontWeight:active?700:400}}>
+  const updScField = (mid, field, val) => setSc(p => ({...p, [mid]: {...p[mid], [field]: val}}));
+  const chkToggleSc = (mid, field) => setSc(p => ({...p, [mid]: {...p[mid], [field]: !p[mid]?.[field]}}));
+  const chkTogglePending = (tempId, field) => setPending(p => p.map(r => r.tempId===tempId ? {...r, [field]:!r[field]} : r));
+
+  const chkBtn = (active, onClick, disabled = false) => (
+    <button onClick={onClick} disabled={disabled} style={{
+      padding:"2px 5px", borderRadius:5,
+      border:`1px solid ${active?C.accent:C.border}`,
+      background:active?C.accentLow:"transparent",
+      color:active?C.accent:C.dim, fontSize:11,
+      cursor: disabled ? "default" : "pointer",
+      fontFamily:"inherit", fontWeight:active?700:400,
+      opacity: disabled ? 0.6 : 1,
+    }}>
       {active?"●":"○"}
     </button>
   );
+
+  // Display name and gender for an existing member, possibly overridden by edits
+  const dispName = (m) => editedNames[m.id]?.name ?? m.name;
+  const dispGender = (m) => editedNames[m.id]?.gender ?? m.gender;
 
   return (<>
     <div style={{...cardSt,overflow:"hidden"}}>
@@ -333,61 +405,82 @@ function EntryTab({members, sc, setSc, form, setForm, setShowPhoto, onSave, goEn
     </div>
 
     {hasRows ? (<>
-      <div style={{fontSize:11,color:C.dim,marginBottom:8}}>참가자 {participating.length + pending.length}명 · 핸디점수 자동계산</div>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
+        <div style={{fontSize:11,color:C.dim}}>참가자 {participating.length + pending.length}명 · 핸디점수 자동계산</div>
+        {checked.size > 0 && <div style={{fontSize:11,color:C.accent}}>{checked.size}개 선택됨</div>}
+      </div>
       <div style={{...cardSt,padding:0,overflow:"hidden"}}>
         <div style={{overflowX:"auto"}}>
-          <table style={{width:"100%",borderCollapse:"collapse",minWidth:520}}>
+          <table style={{width:"100%",borderCollapse:"collapse",minWidth:560}}>
             <thead><tr>
-              {["이름","스코어","신페리오 점수","핸디","버디","파","보기","롱기","니어",""].map((h,i)=>(
+              <th style={{...thSt,paddingLeft:8,paddingRight:3,width:24}}>
+                <input type="checkbox" checked={allChecked} onChange={toggleAll}
+                  style={{cursor:"pointer",accentColor:C.accent}}/>
+              </th>
+              {["이름","스코어","신페리오","핸디","버디","파","보기","롱기","니어"].map((h,i)=>(
                 <th key={i} style={{...thSt,textAlign:i===0?"left":"center",paddingLeft:i===0?8:3,paddingRight:3}}>{h}</th>
               ))}
             </tr></thead>
             <tbody>
               {participating.map(mid => {
-                const m = members.find(x=>x.id===mid) || {id:mid,name:"?",gender:"남"};
+                const m = effectiveMembers.find(x=>x.id===mid) || {id:mid,name:"?",gender:"남"};
                 const es = sc[mid] || {};
-                const hs = es.score!=='' ? hdScore(+es.score).toString() : "—";
+                const isEditing = editing.has(mid);
+                const hs = es.score!=='' && es.score!=null ? hdScore(+es.score).toString() : "—";
+                const name = dispName(m);
+                const gender = dispGender(m);
                 return (
-                  <tr key={mid}>
-                    <td style={{...tdSt,textAlign:"left",paddingLeft:8,fontWeight:500,whiteSpace:"nowrap"}}>
-                      {m.name} <span style={{fontSize:10,color:m.gender==="여"?C.pink:C.blue}}>{m.gender}</span>
+                  <tr key={mid} style={{background: checked.has(mid) ? "rgba(74,222,128,0.06)" : "transparent"}}>
+                    <td style={{...tdSt,paddingLeft:8,paddingRight:3}}>
+                      <input type="checkbox" checked={checked.has(mid)} onChange={()=>toggleCheck(mid)}
+                        style={{cursor:"pointer",accentColor:C.accent}}/>
                     </td>
-                    <td style={{...tdSt,padding:"9px 3px"}}>{numIn("score",mid,46)}</td>
-                    <td style={{...tdSt,padding:"9px 3px"}}>{numIn("hd",mid,42)}</td>
+                    <td style={{...tdSt,textAlign:"left",paddingLeft:8,fontWeight:500,whiteSpace:"nowrap",minWidth:90}}>
+                      {isEditing ? (
+                        <div style={{display:"flex",gap:4,alignItems:"center"}}>
+                          <input style={{...iSt,padding:"4px 5px",fontSize:12,width:64,minWidth:0}}
+                            value={name} onChange={e=>updateEditedName(mid,"name",e.target.value)}/>
+                          <select style={{...iSt,padding:"4px 2px",fontSize:11,width:36}}
+                            value={gender} onChange={e=>updateEditedName(mid,"gender",e.target.value)}>
+                            <option value="남">남</option><option value="여">여</option>
+                          </select>
+                        </div>
+                      ) : (
+                        <>{name} <span style={{fontSize:10,color:gender==="여"?C.pink:C.blue}}>{gender}</span></>
+                      )}
+                    </td>
+                    <td style={{...tdSt,padding:"9px 3px"}}>{numCell(es.score, v=>updScField(mid,"score",v), !isEditing, 46)}</td>
+                    <td style={{...tdSt,padding:"9px 3px"}}>{numCell(es.hd,    v=>updScField(mid,"hd",v),    !isEditing, 42)}</td>
                     <td style={{...tdSt,fontWeight:600,color:C.accent,padding:"9px 3px"}}>{hs}</td>
-                    <td style={{...tdSt,padding:"9px 3px"}}>{numIn("buddies",mid,34)}</td>
-                    <td style={{...tdSt,padding:"9px 3px"}}>{numIn("pars",mid,34)}</td>
-                    <td style={{...tdSt,padding:"9px 3px"}}>{numIn("bogeys",mid,34)}</td>
-                    <td style={{...tdSt,padding:"9px 3px"}}>{chkBtn(!!es.longest, ()=>chkToggle(mid,"longest"))}</td>
-                    <td style={{...tdSt,padding:"9px 3px"}}>{chkBtn(!!es.nearest, ()=>chkToggle(mid,"nearest"))}</td>
-                    <td style={{...tdSt,padding:"9px 3px"}}>
-                      <button onClick={()=>removeParticipant(mid)}
-                        style={{background:"none",border:"none",color:C.dim,fontSize:15,cursor:"pointer",padding:"0 2px"}}>✕</button>
-                    </td>
+                    <td style={{...tdSt,padding:"9px 3px"}}>{numCell(es.buddies, v=>updScField(mid,"buddies",v), !isEditing, 34)}</td>
+                    <td style={{...tdSt,padding:"9px 3px"}}>{numCell(es.pars,    v=>updScField(mid,"pars",v),    !isEditing, 34)}</td>
+                    <td style={{...tdSt,padding:"9px 3px"}}>{numCell(es.bogeys,  v=>updScField(mid,"bogeys",v),  !isEditing, 34)}</td>
+                    <td style={{...tdSt,padding:"9px 3px"}}>{chkBtn(!!es.longest, ()=>chkToggleSc(mid,"longest"), !isEditing)}</td>
+                    <td style={{...tdSt,padding:"9px 3px"}}>{chkBtn(!!es.nearest, ()=>chkToggleSc(mid,"nearest"), !isEditing)}</td>
                   </tr>
                 );
               })}
               {pending.map(r => {
-                const hs = r.score!=='' ? hdScore(+r.score).toString() : "—";
+                const hs = r.score!=='' && r.score!=null ? hdScore(+r.score).toString() : "—";
                 return (
-                  <tr key={r.tempId} style={{background:"rgba(74,222,128,0.04)"}}>
-                    <td style={{...tdSt,paddingLeft:4,paddingRight:2,minWidth:72}}>
-                      <input style={{...iSt,padding:"4px 5px",fontSize:12,width:"100%",minWidth:0}}
-                        value={r.name} placeholder="이름 입력"
+                  <tr key={r.tempId} style={{background: checked.has(r.tempId) ? "rgba(74,222,128,0.06)" : "rgba(74,222,128,0.04)"}}>
+                    <td style={{...tdSt,paddingLeft:8,paddingRight:3}}>
+                      <input type="checkbox" checked={checked.has(r.tempId)} onChange={()=>toggleCheck(r.tempId)}
+                        style={{cursor:"pointer",accentColor:C.accent}}/>
+                    </td>
+                    <td style={{...tdSt,textAlign:"left",paddingLeft:8,fontWeight:500,whiteSpace:"nowrap",minWidth:90}}>
+                      <input style={{...iSt,padding:"4px 5px",fontSize:12,width:80,minWidth:0}}
+                        value={r.name} placeholder="이름"
                         onChange={e=>updPending(r.tempId,"name",e.target.value)}/>
                     </td>
-                    <td style={{...tdSt,padding:"9px 3px"}}>{numCell(r.score, v=>updPending(r.tempId,"score",v), 46)}</td>
-                    <td style={{...tdSt,padding:"9px 3px"}}>{numCell(r.hd,    v=>updPending(r.tempId,"hd",v),    42)}</td>
+                    <td style={{...tdSt,padding:"9px 3px"}}>{numCell(r.score, v=>updPending(r.tempId,"score",v), false, 46)}</td>
+                    <td style={{...tdSt,padding:"9px 3px"}}>{numCell(r.hd,    v=>updPending(r.tempId,"hd",v),    false, 42)}</td>
                     <td style={{...tdSt,fontWeight:600,color:C.accent,padding:"9px 3px"}}>{hs}</td>
-                    <td style={{...tdSt,padding:"9px 3px"}}>{numCell(r.buddies, v=>updPending(r.tempId,"buddies",v), 34)}</td>
-                    <td style={{...tdSt,padding:"9px 3px"}}>{numCell(r.pars,    v=>updPending(r.tempId,"pars",v),    34)}</td>
-                    <td style={{...tdSt,padding:"9px 3px"}}>{numCell(r.bogeys,  v=>updPending(r.tempId,"bogeys",v),  34)}</td>
+                    <td style={{...tdSt,padding:"9px 3px"}}>{numCell(r.buddies, v=>updPending(r.tempId,"buddies",v), false, 34)}</td>
+                    <td style={{...tdSt,padding:"9px 3px"}}>{numCell(r.pars,    v=>updPending(r.tempId,"pars",v),    false, 34)}</td>
+                    <td style={{...tdSt,padding:"9px 3px"}}>{numCell(r.bogeys,  v=>updPending(r.tempId,"bogeys",v),  false, 34)}</td>
                     <td style={{...tdSt,padding:"9px 3px"}}>{chkBtn(!!r.longest, ()=>chkTogglePending(r.tempId,"longest"))}</td>
                     <td style={{...tdSt,padding:"9px 3px"}}>{chkBtn(!!r.nearest, ()=>chkTogglePending(r.tempId,"nearest"))}</td>
-                    <td style={{...tdSt,padding:"9px 3px"}}>
-                      <button onClick={()=>removePending(r.tempId)}
-                        style={{background:"none",border:"none",color:C.dim,fontSize:15,cursor:"pointer",padding:"0 2px"}}>✕</button>
-                    </td>
                   </tr>
                 );
               })}
@@ -403,81 +496,180 @@ function EntryTab({members, sc, setSc, form, setForm, setShowPhoto, onSave, goEn
 
     <div style={{display:"flex",gap:8,marginTop:12,paddingBottom:16,flexWrap:"wrap"}}>
       <button style={btn("p")} onClick={handleSave}>저장</button>
+      <button style={btn()} onClick={toggleEditMode}>{checkedAreEditing ? "수정 완료" : "수정"}</button>
+      <button style={btn("r")} onClick={deleteChecked}>삭제</button>
       <button style={{...btn("g")}} onClick={addRow}>+ 참가자 추가</button>
-      <button style={btn()} onClick={()=>{goEntry();setPending([])}}>초기화</button>
-      <button style={btn()} onClick={()=>setTab("view")}>취소</button>
+      <button style={btn()} onClick={()=>{goEntry();setPending([]);setChecked(new Set());setEditing(new Set());setEditedNames({});}}>초기화</button>
+      <button style={btn()} onClick={()=>{setPending([]);setChecked(new Set());setEditing(new Set());setEditedNames({});cancelEntry();}}>취소</button>
     </div>
   </>);
 }
 
-function SettingsTab({saveError, onReset}) {
-  const [pat, setPat] = useState(() => localStorage.getItem('amp99_github_pat') || '');
-  const [apiKey, setApiKey] = useState(() => localStorage.getItem('amp99_apikey') || '');
-  const [savedPat, setSavedPat] = useState(false);
-  const [savedKey, setSavedKey] = useState(false);
-  const [resetConfirm, setResetConfirm] = useState(false);
+function SettingsTab({saveError}) {
+  const [bffUrl, setBffUrl] = useState(() => localStorage.getItem('amp99_bff_url') || '');
+  const [sharedPw, setSharedPw] = useState(() => localStorage.getItem('amp99_bff_pass') || '');
+  const [savedConn, setSavedConn] = useState(false);
 
-  const savePat = () => {
-    localStorage.setItem('amp99_github_pat', pat.trim());
-    setSavedPat(true);
-    setTimeout(() => setSavedPat(false), 2000);
+  const [usage, setUsage] = useState(null); // {yearMonth, used, cap}
+  const [usageError, setUsageError] = useState('');
+  const [newCap, setNewCap] = useState('');
+  const [adminPw, setAdminPw] = useState('');
+  const [capMsg, setCapMsg] = useState('');
+
+  // Wipe-data state
+  const [wipePw, setWipePw] = useState('');
+  const [wipeConfirm, setWipeConfirm] = useState(false);
+  const [wipeMsg, setWipeMsg] = useState('');
+
+  const loadUsage = async () => {
+    setUsageError('');
+    if (!bffBase()) return;
+    try {
+      const u = await bffFetch('/api/golf/usage');
+      setUsage(u);
+      if (newCap === '') setNewCap(String(u.cap));
+    } catch (e) {
+      setUsage(null);
+      setUsageError(e.message || String(e));
+    }
   };
-  const saveApiKey = () => {
-    if (apiKey.trim()) localStorage.setItem('amp99_apikey', apiKey.trim());
-    else localStorage.removeItem('amp99_apikey');
-    setSavedKey(true);
-    setTimeout(() => setSavedKey(false), 2000);
+
+  useEffect(() => { loadUsage(); }, []);
+
+  const saveConn = () => {
+    localStorage.setItem('amp99_bff_url', bffUrl.trim());
+    localStorage.setItem('amp99_bff_pass', sharedPw.trim());
+    setSavedConn(true);
+    setTimeout(() => setSavedConn(false), 2000);
+    loadUsage();
+    // notify App to reload data with the new connection settings
+    window.dispatchEvent(new CustomEvent('amp99-bff-changed'));
   };
-  const handleReset = () => {
-    if (!resetConfirm) { setResetConfirm(true); return; }
-    onReset();
-    setResetConfirm(false);
+
+  const submitCap = async () => {
+    setCapMsg('');
+    const n = parseInt(newCap, 10);
+    if (isNaN(n) || n < 0) { setCapMsg('cap은 0 이상의 정수여야 합니다'); return; }
+    if (!adminPw.trim()) { setCapMsg('관리자 비밀번호를 입력해 주세요'); return; }
+    try {
+      await bffFetch('/api/golf/cap', {
+        method: 'POST',
+        body: JSON.stringify({cap: n}),
+        adminAuth: adminPw.trim(),
+      });
+      setCapMsg('✓ 변경됨');
+      setAdminPw('');
+      loadUsage();
+    } catch (e) {
+      setCapMsg('오류: ' + (e.message || String(e)));
+    }
+  };
+
+  const submitWipe = async () => {
+    setWipeMsg('');
+    if (!wipePw.trim()) { setWipeMsg('관리자 비밀번호를 입력해 주세요'); return; }
+    if (!wipeConfirm) { setWipeConfirm(true); return; }
+    try {
+      await bffFetch('/api/golf/data', {
+        method: 'DELETE',
+        adminAuth: wipePw.trim(),
+      });
+      setWipeMsg('✓ 모든 회원과 라운드가 삭제되었습니다');
+      setWipePw('');
+      setWipeConfirm(false);
+      // notify App to reload — empty members + rounds will appear immediately
+      window.dispatchEvent(new CustomEvent('amp99-bff-changed'));
+    } catch (e) {
+      setWipeMsg('오류: ' + (e.message || String(e)));
+      setWipeConfirm(false);
+    }
+  };
+
+  const cancelWipe = () => {
+    setWipeConfirm(false);
+    setWipeMsg('');
   };
 
   return (
     <div>
       <div style={{...cardSt}}>
-        <div style={{fontWeight:700,color:C.accent,marginBottom:10}}>📷 AI 사진 분석</div>
+        <div style={{fontWeight:700,color:C.accent,marginBottom:10}}>🔌 BFF 연결</div>
+        <div style={{marginBottom:10}}>
+          <div style={{fontSize:11,color:C.dim,marginBottom:4}}>BFF 서버 주소</div>
+          <input style={iSt} type="text" value={bffUrl} placeholder="http://localhost:8080" onChange={e=>setBffUrl(e.target.value)}/>
+        </div>
         <div style={{marginBottom:14}}>
-          <div style={{fontSize:11,color:C.dim,marginBottom:4}}>Anthropic API 키 (사진으로 성적 입력에 필요)</div>
-          <input style={iSt} type="password" value={apiKey} placeholder="sk-ant-..." onChange={e=>setApiKey(e.target.value)}/>
+          <div style={{fontSize:11,color:C.dim,marginBottom:4}}>공유 비밀번호</div>
+          <input style={iSt} type="password" value={sharedPw} placeholder="••••••" onChange={e=>setSharedPw(e.target.value)}/>
           <div style={{fontSize:10,color:C.dim,marginTop:4}}>
-            키는 이 기기의 localStorage에만 저장됩니다. <a href="https://console.anthropic.com" target="_blank" style={{color:C.accent}}>console.anthropic.com</a>에서 발급
+            BFF 서버에 설정된 공유 비밀번호. 모든 데이터/사진 분석 요청에 사용됩니다.
           </div>
         </div>
-        <button style={{...btn("p"),width:"100%"}} onClick={saveApiKey}>API 키 저장</button>
-        {savedKey && <div style={{marginTop:8,textAlign:"center",color:C.accent,fontSize:12}}>✓ 저장됨</div>}
+        <button style={{...btn("p"),width:"100%"}} onClick={saveConn}>저장</button>
+        {savedConn && <div style={{marginTop:8,textAlign:"center",color:C.accent,fontSize:12}}>✓ 저장됨</div>}
       </div>
+
       <div style={{...cardSt}}>
-        <div style={{fontWeight:700,color:C.accent,marginBottom:10}}>GitHub 설정</div>
-        <div style={{marginBottom:14}}>
-          <div style={{fontSize:11,color:C.dim,marginBottom:4}}>GitHub Personal Access Token (MD 파일 저장에 필요)</div>
-          <input style={iSt} type="password" value={pat} placeholder="ghp_..." onChange={e=>setPat(e.target.value)}/>
-          <div style={{fontSize:10,color:C.dim,marginTop:4}}>
-            PAT는 <code style={{background:C.surface,padding:"1px 4px",borderRadius:3}}>contents: write</code> 권한이 필요합니다. 미입력 시 MD 파일 다운로드로 대체됩니다.
+        <div style={{fontWeight:700,color:C.accent,marginBottom:10}}>📊 사용량 / 한도</div>
+        {!bffUrl.trim() && (
+          <div style={{color:C.dim,fontSize:11,marginBottom:8}}>BFF 서버 주소를 위에 입력하고 저장하면 사용량이 표시됩니다.</div>
+        )}
+        {usageError && (
+          <div style={{color:C.red,fontSize:11,marginBottom:8}}>{usageError}</div>
+        )}
+        {usage && (
+          <div style={{fontSize:13,color:C.text,marginBottom:14}}>
+            <div style={{fontSize:11,color:C.dim,marginBottom:4}}>이번 달 ({usage.yearMonth}) 사진 분석 사용량</div>
+            <div style={{fontSize:24,fontWeight:800,color:C.accent}}>
+              {usage.used} <span style={{fontSize:14,color:C.dim,fontWeight:400}}>/ {usage.cap}</span>
+            </div>
           </div>
+        )}
+        <div style={{borderTop:`1px solid ${C.border}`,paddingTop:12}}>
+          <div style={{fontSize:11,color:C.dim,marginBottom:6}}>월 한도 변경 (관리자 전용)</div>
+          <div style={{display:"flex",gap:8,marginBottom:8}}>
+            <input style={{...iSt,flex:1}} type="number" min="0" value={newCap} onChange={e=>setNewCap(e.target.value)} placeholder="예: 100"/>
+            <button style={btn()} onClick={loadUsage}>새로고침</button>
+          </div>
+          <div style={{marginBottom:8}}>
+            <input style={iSt} type="password" value={adminPw} placeholder="관리자 비밀번호" onChange={e=>setAdminPw(e.target.value)}/>
+          </div>
+          <button style={{...btn("p"),width:"100%"}} onClick={submitCap}>한도 변경</button>
+          {capMsg && (
+            <div style={{marginTop:8,textAlign:"center",fontSize:12,color:capMsg.startsWith('✓')?C.accent:C.red}}>{capMsg}</div>
+          )}
         </div>
-        <button style={{...btn("p"),width:"100%"}} onClick={savePat}>PAT 저장</button>
-        {savedPat && <div style={{marginTop:8,textAlign:"center",color:C.accent,fontSize:12}}>✓ 저장됨</div>}
       </div>
-      <div style={{...cardSt}}>
-        <div style={{fontWeight:700,color:C.red,marginBottom:10}}>⚠️ 데이터 초기화</div>
-        <div style={{fontSize:12,color:C.dim,marginBottom:12}}>모든 회원 및 라운드 데이터를 삭제합니다. 이 작업은 되돌릴 수 없습니다.</div>
-        {resetConfirm && (
+
+      <div style={{...cardSt,border:`1px solid ${C.red}`}}>
+        <div style={{fontWeight:700,color:C.red,marginBottom:6}}>⚠️ 데이터 초기화 (관리자 전용)</div>
+        <div style={{fontSize:11,color:C.dim,marginBottom:12,lineHeight:1.5}}>
+          모든 회원과 라운드 데이터를 영구 삭제합니다. 사용량/한도 설정은 유지됩니다.<br/>
+          이 작업은 되돌릴 수 없습니다.
+        </div>
+        <div style={{marginBottom:8}}>
+          <input style={iSt} type="password" value={wipePw} placeholder="관리자 비밀번호"
+            onChange={e=>{setWipePw(e.target.value); setWipeConfirm(false); setWipeMsg('');}}/>
+        </div>
+        {wipeConfirm && (
           <div style={{background:'rgba(248,113,113,0.1)',border:`1px solid ${C.red}`,borderRadius:8,padding:"10px 12px",marginBottom:10,fontSize:12,color:C.red}}>
-            정말 삭제하시겠습니까? 다시 한번 버튼을 누르면 초기화됩니다.
+            정말로 모든 회원과 라운드를 삭제합니다. 다시 한번 "삭제 확정"을 누르면 즉시 실행됩니다.
           </div>
         )}
         <div style={{display:"flex",gap:8}}>
-          <button style={{...btn("r"),flex:1}} onClick={handleReset}>
-            {resetConfirm ? "확인 — 초기화" : "데이터 초기화"}
+          <button style={{...btn("r"),flex:1}} onClick={submitWipe}>
+            {wipeConfirm ? "삭제 확정" : "전체 데이터 삭제"}
           </button>
-          {resetConfirm && <button style={{...btn(),flex:1}} onClick={()=>setResetConfirm(false)}>취소</button>}
+          {wipeConfirm && <button style={{...btn(),flex:1}} onClick={cancelWipe}>취소</button>}
         </div>
+        {wipeMsg && (
+          <div style={{marginTop:8,textAlign:"center",fontSize:12,color:wipeMsg.startsWith('✓')?C.accent:C.red}}>{wipeMsg}</div>
+        )}
       </div>
+
       {saveError && (
         <div style={{background:'rgba(248,113,113,0.1)',border:`1px solid ${C.red}`,borderRadius:10,padding:"12px 14px",color:C.red,fontSize:12}}>
-          최근 저장 오류: {saveError}
+          최근 오류: {saveError}
         </div>
       )}
     </div>
@@ -501,40 +693,111 @@ function App() {
   const [loading, setLoading]     = useState(true);
   const [saveStatus, setSaveStatus] = useState(''); // '', 'saving', 'ok', 'error'
   const [saveError, setSaveError] = useState('');
+  // pendingNewMembers — members the photo AI detected as new but that have NOT
+  // been persisted to BFF yet. They live here until the user clicks 저장 in
+  // EntryTab; cancelling discards them. Shape: [{id, name, gender}]
+  const [pendingNewMembers, setPendingNewMembers] = useState([]);
 
-  // Always load from golf-scores.md (single source of truth)
+  // Load all data from BFF on mount
   useEffect(() => {
-    setLoading(true);
-    fetch('./golf-scores.md?' + Date.now())
-      .then(r => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.text(); })
-      .then(text => {
-        const parsed = parseMD(text);
-        if (!parsed) throw new Error('파일 형식 오류');
-        setMembers(parsed.members); setRounds(parsed.rounds);
-        setSel(parsed.rounds.length ? [...parsed.rounds].sort((a,b)=>b.date.localeCompare(a.date))[0].id : '');
-      })
-      .catch(e => {
+    // Convert BFF response (periScore) → frontend shape (hd) for back-compat
+    // with existing render/sort code that uses s.hd everywhere.
+    const normalizeRounds = (rounds) => rounds.map(r => ({
+      id: r.id,
+      date: r.date,
+      course: r.course,
+      scores: r.scores.map(s => ({
+        memberId: s.memberId,
+        score: s.score,
+        hd: s.periScore,
+        buddies: s.buddies,
+        pars: s.pars,
+        bogeys: s.bogeys,
+        longest: s.longest,
+        nearest: s.nearest,
+      })),
+    }));
+
+    const loadData = async () => {
+      setLoading(true);
+      setLoadError('');
+      try {
+        const data = await bffFetch('/api/golf/data');
+        const normRounds = normalizeRounds(data.rounds);
+        setMembers(data.members);
+        setRounds(normRounds);
+        setSel(normRounds.length ? [...normRounds].sort((a,b)=>b.date.localeCompare(a.date))[0].id : '');
+      } catch (e) {
         setLoadError('데이터 로드 실패: ' + (e.message || String(e)));
-      })
-      .finally(() => setLoading(false));
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadData();
+
+    // React to BFF connection changes from the Settings tab
+    const onBffChanged = () => loadData();
+    window.addEventListener('amp99-bff-changed', onBffChanged);
+
+    // Clean up legacy localStorage keys (one-time, silent)
+    try {
+      localStorage.removeItem('amp99_apikey');
+      localStorage.removeItem('amp99_github_pat');
+    } catch (e) {}
+
+    return () => window.removeEventListener('amp99-bff-changed', onBffChanged);
   }, []);
 
-  const triggerSave = async (newMembers, newRounds) => {
-    setSaveStatus('saving'); setSaveError('');
-    const result = await saveMDToGitHub(newMembers, newRounds);
-    if (result.ok) {
-      setSaveStatus('ok');
-      setTimeout(() => setSaveStatus(''), 2500);
-    } else if (result.error === 'no_pat') {
-      setSaveStatus('');
-    } else {
-      setSaveStatus('error'); setSaveError(result.error || '알 수 없는 오류');
+  // When the user enters the 회원관리 tab, refresh from BFF so they always
+  // see the canonical state. This is a safety net — the only place where
+  // members get persisted should be the round-save flow, but if any other
+  // path silently mutates the master we want this tab to surface it.
+  useEffect(() => {
+    if (tab === "members") {
+      reloadData().catch(() => { /* surfaced via saveError */ });
+    }
+  }, [tab]);
+
+  // Convert BFF response (periScore) → frontend shape (hd)
+  const normalizeRounds = (rounds) => rounds.map(r => ({
+    id: r.id,
+    date: r.date,
+    course: r.course,
+    scores: r.scores.map(s => ({
+      memberId: s.memberId,
+      score: s.score,
+      hd: s.periScore,
+      buddies: s.buddies,
+      pars: s.pars,
+      bogeys: s.bogeys,
+      longest: s.longest,
+      nearest: s.nearest,
+    })),
+  }));
+
+  const reloadData = async () => {
+    try {
+      const data = await bffFetch('/api/golf/data');
+      const normRounds = normalizeRounds(data.rounds);
+      setMembers(data.members);
+      setRounds(normRounds);
+      return {members: data.members, rounds: normRounds};
+    } catch (e) {
+      setSaveError(e.message || String(e));
+      throw e;
     }
   };
 
-  const handleReset = async () => {
-    setMembers([]); setRounds([]); setSel('');
-    await triggerSave([], []);
+  const withSaveStatus = async (fn) => {
+    setSaveStatus('saving'); setSaveError('');
+    try {
+      await fn();
+      setSaveStatus('ok');
+      setTimeout(() => setSaveStatus(''), 2500);
+    } catch (e) {
+      setSaveStatus('error');
+      setSaveError(e.message || String(e));
+    }
   };
 
   const gm = (id) => members.find(m => m.id === id) || {name:"?", gender:"남"};
@@ -555,65 +818,149 @@ function App() {
 
   const goEntry = () => {
     setForm({date:new Date().toISOString().slice(0,10), course:""});
-    setSc({}); setTab("entry");
+    setSc({}); setPendingNewMembers([]); setTab("entry");
   };
 
-  const saveRound = (mergedSc, newMembers) => {
+  // Cancel/leave the entry tab without saving — discard all transient state.
+  const cancelEntry = () => {
+    setSc({});
+    setPendingNewMembers([]);
+    setTab("view");
+  };
+
+  // EntryTab calls this with:
+  //   mergedSc: { memberId → {score, hd, buddies, ...} } — only rows still in sc are saved
+  //   newMembersList: ad-hoc new members typed into EntryTab pending rows
+  //   editedMembers: existing members whose name/gender was changed in-place (need PUT /members/{id})
+  // saveRound also persists any photo-detected pending members (App-level state).
+  const saveRound = (mergedSc, newMembersList, editedMembers) => {
     if (!form.date || !form.course.trim()) { alert("날짜와 코스명을 입력하세요"); return; }
-    const list = Object.entries(mergedSc)
-      .map(([mid,v]) => ({memberId:mid, score:+v.score, hd:+v.hd, buddies:+v.buddies||0, pars:+v.pars||0, bogeys:+v.bogeys||0, longest:!!v.longest, nearest:!!v.nearest}));
-    const updatedMembers = newMembers || members;
-    const nr = {id:uid(), date:form.date, course:form.course, scores:list};
-    const newRounds = [...rounds, nr];
-    setMembers(updatedMembers);
-    setRounds(newRounds); setSel(nr.id); setTab("view");
-    triggerSave(updatedMembers, newRounds);
+    const newId = uid();
+    // Combine the two new-member sources, deduped by id, and only keep ones
+    // whose row actually survived in mergedSc (so deletions are respected).
+    const usedIds = new Set(Object.keys(mergedSc));
+    const allNew = [...(newMembersList || []), ...pendingNewMembers]
+      .filter((m, i, arr) => arr.findIndex(x => x.id === m.id) === i)
+      .filter(m => usedIds.has(m.id));
+    withSaveStatus(async () => {
+      // 1. Apply edits to existing members (rename / gender change). Only edits
+      // for members already in the BFF — pending photo members get their
+      // edits via the create call below.
+      const existingIds = new Set(members.map(m => m.id));
+      const pendingIds = new Set(allNew.map(m => m.id));
+      if (editedMembers && editedMembers.length > 0) {
+        for (const m of editedMembers) {
+          if (existingIds.has(m.id)) {
+            await bffFetch(`/api/golf/members/${encodeURIComponent(m.id)}`, {
+              method: 'PUT',
+              body: JSON.stringify({name: m.name, gender: m.gender || '남'}),
+            });
+          } else if (pendingIds.has(m.id)) {
+            // Apply the edit to the in-memory pending member so the create
+            // below uses the new name/gender.
+            const idx = allNew.findIndex(x => x.id === m.id);
+            if (idx >= 0) {
+              allNew[idx] = {...allNew[idx], name: m.name, gender: m.gender || '남'};
+            }
+          }
+        }
+      }
+      // 2. Create all pending new members (photo-detected + EntryTab ad-hoc)
+      for (const m of allNew) {
+        await bffFetch('/api/golf/members', {
+          method: 'POST',
+          body: JSON.stringify({id: m.id, name: m.name, gender: m.gender || '남'}),
+        });
+      }
+      // 3. Build score list and create the round
+      const list = Object.entries(mergedSc)
+        .filter(([mid, v]) => v.on !== false && v.score !== '')
+        .map(([mid, v]) => ({
+          memberId: mid,
+          score: +v.score || 0,
+          periScore: +v.hd || 0,
+          buddies: +v.buddies || 0,
+          pars: +v.pars || 0,
+          bogeys: +v.bogeys || 0,
+          longest: !!v.longest,
+          nearest: !!v.nearest,
+        }));
+      await bffFetch('/api/golf/rounds', {
+        method: 'POST',
+        body: JSON.stringify({id: newId, date: form.date, course: form.course.trim(), scores: list}),
+      });
+      // 4. Reset transient state and reload
+      setPendingNewMembers([]);
+      setSc({});
+      await reloadData();
+      setSel(newId);
+      setTab("view");
+    });
   };
 
   const saveMember = () => {
     if (!mf.name.trim()) return;
-    let newMembers;
-    if (editId) {
-      newMembers = members.map(m => m.id===editId ? {...m,...mf} : m);
-      setMembers(newMembers); setEditId(null);
-    } else {
-      newMembers = [...members, {id:uid(), ...mf}];
-      setMembers(newMembers);
-    }
-    setMf({name:"", gender:"남"});
-    triggerSave(newMembers, rounds);
+    withSaveStatus(async () => {
+      if (editId) {
+        await bffFetch(`/api/golf/members/${encodeURIComponent(editId)}`, {
+          method: 'PUT',
+          body: JSON.stringify({name: mf.name.trim(), gender: mf.gender}),
+        });
+        setEditId(null);
+      } else {
+        await bffFetch('/api/golf/members', {
+          method: 'POST',
+          body: JSON.stringify({id: uid(), name: mf.name.trim(), gender: mf.gender}),
+        });
+      }
+      setMf({name: "", gender: "남"});
+      await reloadData();
+    });
   };
 
   const deleteMember = (id) => {
-    const newMembers = members.filter(x => x.id !== id);
-    setMembers(newMembers); setDelId(null);
-    triggerSave(newMembers, rounds);
+    setDelId(null);
+    withSaveStatus(async () => {
+      await bffFetch(`/api/golf/members/${encodeURIComponent(id)}`, {method: 'DELETE'});
+      await reloadData();
+    });
   };
 
   const applyPhoto = (matched, newMembers, total) => {
-    let addedNames = [];
+    // Hold new members in client-only state. They are persisted to the BFF
+    // only when the user clicks 저장 in EntryTab; 취소 discards them.
     let created = [];
     if (newMembers.length > 0) {
-      created = newMembers.map(nm => ({id:uid(), name:nm.name, gender:nm.gender||'남'}));
-      setMembers(p => [...p, ...created]);
+      created = newMembers.map(nm => ({
+        id: uid(),
+        name: nm.name,
+        gender: nm.gender || '남',
+      }));
       created.forEach((m, i) => {
         const nm = newMembers[i];
-        matched[m.id] = {score:String(nm.score||''), hd:String(nm.hd||''), buddies:nm.buddies||0, pars:nm.pars||0, bogeys:nm.bogeys||0, longest:!!nm.longest, nearest:!!nm.nearest};
+        matched[m.id] = {
+          on: true,
+          score: String(nm.score || ''),
+          hd: String(nm.hd || ''),
+          buddies: nm.buddies || 0,
+          pars: nm.pars || 0,
+          bogeys: nm.bogeys || 0,
+          longest: !!nm.longest,
+          nearest: !!nm.nearest,
+        };
       });
-      addedNames = created.map(m => m.name);
+      setPendingNewMembers(p => [...p, ...created]);
     }
     setSc(p => {
       const next = {...p};
-      Object.entries(matched).forEach(([id, vals]) => { next[id] = {score:"", hd:"", buddies:0, pars:0, bogeys:0, longest:false, nearest:false, ...vals}; });
+      Object.entries(matched).forEach(([id, vals]) => {
+        next[id] = {on: true, score: "", hd: "", buddies: 0, pars: 0, bogeys: 0, longest: false, nearest: false, ...vals};
+      });
       return next;
     });
     const lines = [`${total}명 중 ${Object.keys(matched).length}명 자동 입력`];
-    if (addedNames.length) lines.push(`신규 회원 추가: ${addedNames.join(', ')}`);
+    if (created.length) lines.push(`임시 회원 추가: ${created.map(m => m.name).join(', ')}\n(저장을 눌러야 회원으로 영구 등록됩니다)`);
     alert(lines.join('\n'));
-    // 신규 회원이 추가된 경우 즉시 MD에 저장
-    if (addedNames.length > 0) {
-      triggerSave([...members, ...created], rounds);
-    }
   };
 
   const stats = members.map(m => {
@@ -622,13 +969,6 @@ function App() {
     const sc2 = h.map(x => x.score);
     return {...m, hist:h, games:h.length, avg:avg(sc2).toFixed(1), best:Math.min(...sc2), avgHd:avg(h.map(x=>x.hd)).toFixed(1), buds:h.reduce((a,x)=>a+(x.buddies||0),0)};
   }).filter(Boolean).sort((a,b) => parseFloat(a.avg)-parseFloat(b.avg));
-
-  const numIn = (field, mid, w=44) => (
-    <input type="number" min="0"
-      style={{background:"#060c06",border:`1px solid ${C.border}`,color:sc[mid]?.on===false?C.dim:C.text,borderRadius:5,padding:"4px 3px",width:w,textAlign:"center",fontSize:12,outline:"none",fontFamily:"inherit"}}
-      value={sc[mid]?.[field] ?? ""} disabled={sc[mid]?.on===false}
-      onChange={e => setSc(p => ({...p,[mid]:{...p[mid],[field]:e.target.value}}))} placeholder="0"/>
-  );
 
   return (
     <div style={{background:C.bg,minHeight:"100vh",color:C.text,fontFamily:"'Apple SD Gothic Neo','Noto Sans KR',sans-serif",display:"flex",flexDirection:"column",maxWidth:540,margin:"0 auto"}}>
@@ -645,7 +985,6 @@ function App() {
           {saveStatus==='saving' && <span style={{fontSize:11,color:C.dim}}>저장 중...</span>}
           {saveStatus==='ok' && <span style={{fontSize:11,color:C.accent}}>✓ 저장됨</span>}
           {saveStatus==='error' && <span style={{fontSize:11,color:C.red}} title={saveError}>⚠ 저장 실패</span>}
-          <button style={{...btn("g"),padding:"5px 10px",fontSize:11}} onClick={()=>downloadMD(members,rounds)}>⬇ MD</button>
           <span style={{fontSize:11,color:C.dim}}>{rounds.length}라운드·{members.length}명</span>
         </div>
       </div>
@@ -659,7 +998,7 @@ function App() {
         )}
 
         {/* ── 로딩 ── */}
-        {loading && <div style={{textAlign:"center",padding:48,color:C.dim}}>⏳ golf-scores.md 로딩 중...</div>}
+        {loading && <div style={{textAlign:"center",padding:48,color:C.dim}}>⏳ 데이터 로딩 중...</div>}
 
         {/* ── 성적 조회 ── */}
         {!loading && tab==="view" && cur && (<>
@@ -742,8 +1081,10 @@ function App() {
 
         {/* ── 성적 입력 ── */}
         {tab==="entry" && (<EntryTab
-          members={members} sc={sc} setSc={setSc} form={form} setForm={setForm}
-          setShowPhoto={setShowPhoto} onSave={saveRound} goEntry={goEntry} setTab={setTab} numIn={numIn}
+          members={members} pendingNewMembers={pendingNewMembers}
+          sc={sc} setSc={setSc} form={form} setForm={setForm}
+          setShowPhoto={setShowPhoto} onSave={saveRound}
+          goEntry={goEntry} cancelEntry={cancelEntry}
         />)}
 
         {/* ── 회원 관리 ── */}
@@ -781,7 +1122,7 @@ function App() {
         </>)}
 
         {/* ── 설정 ── */}
-        {tab==="settings" && <SettingsTab saveError={saveError} onReset={handleReset}/>}
+        {tab==="settings" && <SettingsTab saveError={saveError}/>}
 
         {/* ── 통계 ── */}
         {tab==="stats" && (<>
